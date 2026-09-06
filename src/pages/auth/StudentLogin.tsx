@@ -1,13 +1,27 @@
 import type { FormEvent } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./StudentLogin.css";
-import {useNavigate} from "react-router-dom";
 
 function StudentLogin() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setError("");
+    setSuccess("");
 
-    console.log("Student login submitted");
+    if (email.toLowerCase() !== "student@hireon.com" || password !== "Student@123") {
+      setError("Use student@hireon.com and Student@123 to sign in.");
+      return;
+    }
+
+    localStorage.setItem("hireon.role", "student");
+    navigate("/student-dashboard");
   };
 
   return (
@@ -65,6 +79,8 @@ function StudentLogin() {
                 type="email"
                 placeholder="Enter your email"
                 required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
               />
             </div>
 
@@ -76,6 +92,8 @@ function StudentLogin() {
                 type="password"
                 placeholder="Enter your password"
                 required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
               />
             </div>
 
@@ -93,6 +111,9 @@ function StudentLogin() {
               </button>
             </div>
 
+            {error && <p className="login-message login-error" role="alert">{error}</p>}
+            {success && <p className="login-message login-success" role="status">{success}</p>}
+
             <button type="submit" className="login-button">
               Sign In
             </button>
@@ -100,11 +121,6 @@ function StudentLogin() {
           </form>
 
           <div className="login-footer">
-            <p>
-              Don't have an account?
-              <button type="button">Create account</button>
-            </p>
-
             <div className="director-login">
               <span>Are you a placement director?</span>
               <button type="button"

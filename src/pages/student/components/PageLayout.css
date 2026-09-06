@@ -1,0 +1,24 @@
+.student-page-layout,
+.director-page-layout {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: #f7f7f7;
+}
+
+.student-page-main,
+.director-page-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  height: 100vh;
+}
+
+.student-page-content,
+.director-page-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
