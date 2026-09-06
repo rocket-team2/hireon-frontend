@@ -200,6 +200,19 @@
   transform: scale(0.99);
 }
 
+.director-login-message {
+  margin: 0 0 18px;
+  font-size: 14px;
+}
+
+.director-login-error {
+  color: #b91c1c;
+}
+
+.director-login-success {
+  color: #15803d;
+}
+
 /* Footer */
 
 .director-login-footer {

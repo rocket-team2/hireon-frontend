@@ -198,6 +198,19 @@
   transform: scale(0.99);
 }
 
+.login-message {
+  margin: 0 0 18px;
+  font-size: 14px;
+}
+
+.login-error {
+  color: #b91c1c;
+}
+
+.login-success {
+  color: #15803d;
+}
+
 /* Footer */
 
 .login-footer {

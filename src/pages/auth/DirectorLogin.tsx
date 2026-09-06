@@ -1,13 +1,27 @@
 import type { FormEvent } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./DirectorLogin.css";
-import {useNavigate} from "react-router-dom";
 
 function DirectorLogin() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setError("");
+    setSuccess("");
 
-    console.log("Director login submitted");
+    if (email.toLowerCase() !== "director@hireon.com" || password !== "Director@123") {
+      setError("Use director@hireon.com and Director@123 to sign in.");
+      return;
+    }
+
+    localStorage.setItem("hireon.role", "director");
+    navigate("/director-dashboard");
   };
 
   return (
@@ -69,6 +83,8 @@ function DirectorLogin() {
                 type="email"
                 placeholder="Enter your email"
                 required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
               />
             </div>
 
@@ -82,6 +98,8 @@ function DirectorLogin() {
                 type="password"
                 placeholder="Enter your password"
                 required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
               />
             </div>
 
@@ -99,10 +117,12 @@ function DirectorLogin() {
               </button>
             </div>
 
+            {error && <p className="director-login-message director-login-error" role="alert">{error}</p>}
+            {success && <p className="director-login-message director-login-success" role="status">{success}</p>}
+
             <button
               type="submit"
-              className="director-login-button"
-            >
+              className="director-login-button">
               Sign In
             </button>
 
