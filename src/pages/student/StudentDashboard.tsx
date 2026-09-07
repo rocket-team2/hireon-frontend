@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   departmentsFromDrive,
+  getDrive,
   getActiveDrives,
   getSession,
   getStudentRegistrations,
@@ -127,8 +128,8 @@ function StudentDashboard() {
   };
 
   const handleViewDetails = (drive: DashboardDrive) => {
-    window.alert(`${drive.company}\n${drive.role}\nCTC: ₹${drive.ctc} LPA\nDeadline: ${drive.deadline}`);
-  };
+  navigate(`/student/drives/${drive.id}`);
+};
 
   return (
     <div className="student-dashboard">

@@ -11,6 +11,7 @@ import StudentShortlisted from "./pages/student/StudentShortlisted";
 import StudentSkills from "./pages/student/StudentSkills";
 import StudentCompanies from "./pages/student/StudentCompanies";
 import StudentProfile from "./pages/student/StudentProfile";
+import StudentDriveDetails from "./pages/student/StudentDriveDetails";
 
 import DirectorDashboard from "./pages/director/DirectorDashboard";
 import DirectorStudents from "./pages/director/DirectorStudents";
@@ -47,6 +48,7 @@ function App() {
       <Route path="/student/skills" element={<ProtectedRoute role="student"><StudentSkills /></ProtectedRoute>} />
       <Route path="/student/companies" element={<ProtectedRoute role="student"><StudentCompanies /></ProtectedRoute>} />
       <Route path="/student-profile" element={<ProtectedRoute role="student"><StudentProfile /></ProtectedRoute>} />
+      <Route path="/student/drives/:id" element={<StudentDriveDetails />} />
 
       {/* Director Routes */}
       <Route path="/director-dashboard" element={<ProtectedRoute role="director"><DirectorDashboard /></ProtectedRoute>} />
