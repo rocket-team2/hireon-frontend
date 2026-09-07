@@ -1,10 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  departmentsFromDrive,
+  getActiveDrives,
+  getSession,
+  getStudentRegistrations,
+  registerForDrive,
+  clearSession,
+  type Drive as ApiDrive,
+  type Student,
+} from "../../api";
 import StudentSidebar from "./components/StudentSidebar";
 import StudentHeader from "./components/StudentHeader";
 import "./StudentDashboard.css";
 
-interface Drive {
+interface DashboardDrive {
   id: number;
   company: string;
   role: string;
@@ -15,121 +25,129 @@ interface Drive {
   departments: string[];
 }
 
-const initialDrives: Drive[] = [
-  {
-    id: 1,
-    company: "TCS",
-    role: "Software Engineer",
-    ctc: 7.5,
-    deadline: "15 Sep 2026",
-    eligibility: true,
-    registered: false,
-    departments: ["IT", "CSE", "ECE"],
-  },
-  {
-    id: 2,
-    company: "Infosys",
-    role: "Systems Engineer",
-    ctc: 6.5,
-    deadline: "20 Sep 2026",
-    eligibility: true,
-    registered: true,
-    departments: ["IT", "CSE", "ECE", "EEE"],
-  },
-  {
-    id: 3,
-    company: "Wipro",
-    role: "Project Engineer",
-    ctc: 5.5,
-    deadline: "10 Sep 2026",
-    eligibility: false,
-    registered: false,
-    departments: ["IT", "CSE"],
-  },
-  {
-    id: 4,
-    company: "Accenture",
-    role: "Associate Software Engineer",
-    ctc: 6,
-    deadline: "25 Sep 2026",
-    eligibility: true,
-    registered: false,
-    departments: ["IT", "CSE"],
-  },
-];
+function toDashboardDrive(drive: ApiDrive, student: Student, registeredIds: Set<number>): DashboardDrive {
+  const departments = departmentsFromDrive(drive.allowed_dept);
+  const studentDepartment = (student.department || "").toLowerCase();
+  const eligibility = departments.length === 0 || departments.some((department) => (
+    department.toLowerCase() === studentDepartment ||
+    (studentDepartment.includes("information technology") && department.toLowerCase() === "it")
+  ));
 
-function getDrives(): Drive[] {
-  const savedDrives = localStorage.getItem("directorDrives");
-  const createdDrives = savedDrives ? JSON.parse(savedDrives) : [];
-
-  return [
-    ...initialDrives,
-    ...createdDrives.map((drive: { id: number; company: string; jobRole: string; ctc: number; deadline: string; departments: string[] }) => ({
-      id: drive.id,
-      company: drive.company,
-      role: drive.jobRole,
-      ctc: drive.ctc,
-      deadline: drive.deadline,
-      eligibility: drive.departments.includes("IT"),
-      registered: false,
-      departments: drive.departments,
-    })),
-  ];
+  return {
+    id: drive.driveId,
+    company: drive.company?.c_name ?? "Company",
+    role: drive.job_role,
+    ctc: drive.ctc_lpa,
+    deadline: new Date(drive.deadline).toLocaleDateString(),
+    eligibility,
+    registered: registeredIds.has(drive.driveId),
+    departments,
+  };
 }
 
 function StudentDashboard() {
-  const [activePage, setActivePage] = useState("dashboard");
-  const [drives] = useState<Drive[]>(getDrives);
+  const [drives, setDrives] = useState<DashboardDrive[]>([]);
+  const [student] = useState<Student | null>(() => {
+    const session = getSession();
+    return session?.role === "student" ? session.user as Student : null;
+  });
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const studentName = "Thejashree";
-  const department = "Information Technology";
+  useEffect(() => {
+    const session = getSession();
+    if (!session || session.role !== "student") {
+      navigate("/login-page", { replace: true });
+      return;
+    }
+
+    const currentStudent = session.user as Student;
+
+    const loadDashboard = async () => {
+      try {
+        const [activeDrives, registrations] = await Promise.all([
+          getActiveDrives(),
+          getStudentRegistrations(currentStudent.sId),
+        ]);
+        const registeredIds = new Set(registrations.map((registration) => registration.drive.driveId));
+        setDrives(activeDrives.map((drive) => toDashboardDrive(drive, currentStudent, registeredIds)));
+      } catch {
+        setError("Unable to load placement drives from database.");
+      }
+    };
+
+    void loadDashboard();
+  }, [navigate]);
 
   const handleNavigation = (page: string) => {
-    if (page === "profile") {
-      navigate("/student-profile");
-      return;
+    switch (page) {
+      case "dashboard":
+        navigate("/student-dashboard");
+        break;
+      case "drives":
+        navigate("/student/drives");
+        break;
+      case "applications":
+        navigate("/student/applications");
+        break;
+      case "shortlisted":
+        navigate("/student/shortlisted");
+        break;
+      case "skills":
+        navigate("/student/skills");
+        break;
+      case "companies":
+        navigate("/student/companies");
+        break;
+      case "profile":
+        navigate("/student-profile");
+        break;
+      default:
+        navigate("/student-dashboard");
+        break;
     }
-
-    if (page === "skills") {
-      navigate("/student-profile#skills");
-      return;
-    }
-
-    setActivePage(page);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("hireon.role");
+    clearSession();
     navigate("/login-page", { replace: true });
   };
 
-  const handleRegister = (drive: Drive) => {
-    console.log("Registering for:", drive.company);
+  const handleRegister = async (drive: DashboardDrive) => {
+    if (!student) return;
+
+    try {
+      await registerForDrive(drive.id, student.sId);
+      setDrives((currentDrives) => currentDrives.map((item) => (
+        item.id === drive.id ? { ...item, registered: true } : item
+      )));
+    } catch {
+      setError("Registration failed for this drive.");
+    }
   };
 
-  const handleViewDetails = (drive: Drive) => {
-    console.log("Viewing:", drive.company);
+  const handleViewDetails = (drive: DashboardDrive) => {
+    window.alert(`${drive.company}\n${drive.role}\nCTC: ₹${drive.ctc} LPA\nDeadline: ${drive.deadline}`);
   };
 
   return (
     <div className="student-dashboard">
       <StudentSidebar
-        activePage={activePage}
+        activePage="dashboard"
         onNavigate={handleNavigation}
         onLogout={handleLogout}
       />
 
       <div className="student-dashboard-main">
         <StudentHeader
-          studentName={studentName}
-          department={department}
+          studentName={student?.name ?? "Student"}
+          department={student?.department ?? ""}
         />
 
         <main className="student-dashboard-content">
           <section className="student-welcome">
             <div>
-              <h1>Welcome back, {studentName}</h1>
+              <h1>Welcome back, {student?.name ?? "Student"}</h1>
               <p>
                 View placement opportunities and track your applications.
               </p>
@@ -137,9 +155,11 @@ function StudentDashboard() {
 
             <div className="placement-status">
               <span>Placement Status</span>
-              <strong>Not Placed</strong>
+              <strong>{student?.placement_status ?? "Not Placed"}</strong>
             </div>
           </section>
+
+          {error && <p role="alert">{error}</p>}
 
           <section className="drive-section">
             <div className="section-heading">
@@ -216,7 +236,7 @@ function StudentDashboard() {
                       disabled={
                         !drive.eligibility || drive.registered
                       }
-                      onClick={() => handleRegister(drive)}
+                      onClick={() => void handleRegister(drive)}
                     >
                       {drive.registered
                         ? "Registered"

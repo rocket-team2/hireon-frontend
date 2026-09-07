@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import "./StudentSidebar.css";
 
 interface StudentSidebarProps {
@@ -12,8 +11,6 @@ function StudentSidebar({
   onNavigate,
   onLogout,
 }: StudentSidebarProps) {
-  const navigate = useNavigate();
-
   const menuItems = [
     { id: "dashboard", label: "Dashboard" },
     { id: "drives", label: "Placement Drives" },
@@ -28,16 +25,7 @@ function StudentSidebar({
       <div className="student-sidebar-logo">HireOn</div>
 
       <nav className="student-sidebar-menu">
-        {menuItems.map((item) => item.id === "skills" ? (
-          <button
-            key={item.id}
-            type="button"
-            className={activePage === item.id ? "student-sidebar-item active" : "student-sidebar-item"}
-            onClick={() => navigate("/student/skills")}
-          >
-            {item.label}
-          </button>
-        ) : (
+        {menuItems.map((item) => (
           <button
             key={item.id}
             type="button"
@@ -52,7 +40,7 @@ function StudentSidebar({
       <div className="student-sidebar-bottom">
         <button
           type="button"
-          className="student-sidebar-item"
+          className={activePage === "profile" ? "student-sidebar-item active" : "student-sidebar-item"}
           onClick={() => onNavigate("profile")}
         >
           My Profile
