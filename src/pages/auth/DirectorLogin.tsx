@@ -1,6 +1,7 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getDirector, saveSession } from "../../api";
 import "./DirectorLogin.css";
 
 function DirectorLogin() {
@@ -9,19 +10,40 @@ function DirectorLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
     setSuccess("");
+    setIsLoading(true);
 
-    if (email.toLowerCase() !== "director@hireon.com" || password !== "Director@123") {
-      setError("Use director@hireon.com and Director@123 to sign in.");
-      return;
+    try {
+      let directorMatch;
+      for (let id = 1; id <= 20 && !directorMatch; id += 1) {
+        try {
+          const director = await getDirector(id);
+          if (director.email.toLowerCase() === email.trim().toLowerCase() && director.password === password) {
+            directorMatch = director;
+          }
+        } catch {
+          // The existing backend exposes directors by id, so missing ids are skipped.
+        }
+      }
+
+      if (!directorMatch) {
+        setError("The email or password is incorrect.");
+        return;
+      }
+
+      const safeDirector = { ...directorMatch, password: undefined };
+      saveSession({ role: "director", user: safeDirector });
+      navigate("/director-dashboard");
+    } catch {
+      setError("Unable to connect to HireOn. Make sure the backend is running.");
+    } finally {
+      setIsLoading(false);
     }
-
-    localStorage.setItem("hireon.role", "director");
-    navigate("/director-dashboard");
   };
 
   return (
@@ -122,8 +144,9 @@ function DirectorLogin() {
 
             <button
               type="submit"
-              className="director-login-button">
-              Sign In
+              className="director-login-button"
+              disabled={isLoading}>
+              {isLoading ? "Signing In..." : "Sign In"}
             </button>
 
           </form>

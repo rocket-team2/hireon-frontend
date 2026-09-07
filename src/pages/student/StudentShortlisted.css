@@ -1,0 +1,93 @@
+.shortlisted-page {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.shortlisted-header {
+  margin-bottom: 2rem;
+}
+
+.shortlisted-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.shortlisted-header p {
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.shortlist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.shortlist-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.shortlist-info h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.shortlist-info p {
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.shortlist-status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.shortlist-status-badge.shortlisted,
+.shortlist-status-badge.selected,
+.shortlist-status-badge.passed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.shortlist-status-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.shortlist-status-badge.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.feedback-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  color: #2563eb;
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
+
+.empty-shortlist {
+  text-align: center;
+  padding: 3rem;
+  background: white;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+}

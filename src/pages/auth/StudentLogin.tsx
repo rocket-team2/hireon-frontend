@@ -1,6 +1,7 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getStudents, saveSession } from "../../api";
 import "./StudentLogin.css";
 
 function StudentLogin() {
@@ -9,19 +10,31 @@ function StudentLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
     setSuccess("");
+    setIsLoading(true);
 
-    if (email.toLowerCase() !== "student@hireon.com" || password !== "Student@123") {
-      setError("Use student@hireon.com and Student@123 to sign in.");
-      return;
+    try {
+      const students = await getStudents();
+      const student = students.find((item) => item.email.toLowerCase() === email.trim().toLowerCase() && item.password === password);
+
+      if (!student) {
+        setError("The email or password is incorrect.");
+        return;
+      }
+
+      const safeStudent = { ...student, password: undefined };
+      saveSession({ role: "student", user: safeStudent });
+      navigate("/student-dashboard");
+    } catch {
+      setError("Unable to connect to HireOn. Make sure the backend is running.");
+    } finally {
+      setIsLoading(false);
     }
-
-    localStorage.setItem("hireon.role", "student");
-    navigate("/student-dashboard");
   };
 
   return (
@@ -114,8 +127,8 @@ function StudentLogin() {
             {error && <p className="login-message login-error" role="alert">{error}</p>}
             {success && <p className="login-message login-success" role="status">{success}</p>}
 
-            <button type="submit" className="login-button">
-              Sign In
+            <button type="submit" className="login-button" disabled={isLoading}>
+              {isLoading ? "Signing In..." : "Sign In"}
             </button>
 
           </form>

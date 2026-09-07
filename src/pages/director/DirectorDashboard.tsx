@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { clearSession, getAllDrives, getDriveRegistrations, getSession, getStudents, type Drive as ApiDrive, type Director } from "../../api";
 import DirectorSidebar from "./components/DirectorSidebar";
 import DirectorHeader from "./components/DirectorHeader";
 import "./DirectorDashboard.css";
 
-interface Drive {
+interface DashboardDrive {
   id: number;
   companyName: string;
   jobRole: string;
@@ -15,102 +16,96 @@ interface Drive {
   shortlisted: number;
 }
 
-interface CreatedDrive {
-  id: number;
-  company: string;
-  jobRole: string;
-  ctc: number;
-  deadline: string;
-}
-
-const initialDrives: Drive[] = [
-  {
-    id: 1,
-    companyName: "TCS",
-    jobRole: "Software Engineer",
-    ctc: 7.5,
-    deadline: "15 Sep 2026",
-    registered: 124,
-    eligible: 160,
-    shortlisted: 32,
-  },
-  {
-    id: 2,
-    companyName: "Infosys",
-    jobRole: "Systems Engineer",
-    ctc: 6.5,
-    deadline: "20 Sep 2026",
-    registered: 98,
-    eligible: 142,
-    shortlisted: 24,
-  },
-  {
-    id: 3,
-    companyName: "Wipro",
-    jobRole: "Project Engineer",
-    ctc: 5.5,
-    deadline: "10 Sep 2026",
-    registered: 116,
-    eligible: 135,
-    shortlisted: 40,
-  },
-  {
-    id: 4,
-    companyName: "Accenture",
-    jobRole: "Associate Software Engineer",
-    ctc: 6,
-    deadline: "25 Sep 2026",
-    registered: 105,
-    eligible: 120,
-    shortlisted: 28,
-  },
-];
-
-function getDrives(): Drive[] {
-  const savedDrives = localStorage.getItem("directorDrives");
-  const createdDrives = savedDrives ? JSON.parse(savedDrives) : [];
-
-  return [
-    ...initialDrives,
-    ...createdDrives.map((drive: CreatedDrive) => ({
-      ...drive,
-      companyName: drive.company,
-      registered: 0,
-      eligible: 0,
-      shortlisted: 0,
-    })),
-  ];
-}
-
 function DirectorDashboard() {
-  const [activePage, setActivePage] = useState("dashboard");
-  const [drives] = useState<Drive[]>(getDrives);
+  const [drives, setDrives] = useState<DashboardDrive[]>([]);
+  const [studentCount, setStudentCount] = useState(0);
+  const [placedStudentCount, setPlacedStudentCount] = useState(0);
+  const [error, setError] = useState("");
+  const [director] = useState<Director | null>(() => {
+    const session = getSession();
+    return session?.role === "director" ? session.user as Director : null;
+  });
   const navigate = useNavigate();
 
-  const finalYearStudents = 420;
-  const placedStudents = 286;
-  const unplacedStudents =
-    finalYearStudents - placedStudents;
+  useEffect(() => {
+    const session = getSession();
+    if (!session || session.role !== "director") {
+      navigate("/director-login-page", { replace: true });
+      return;
+    }
 
-  const placementRate =
-    ((placedStudents / finalYearStudents) * 100).toFixed(1);
+    const loadDashboard = async () => {
+      try {
+        const [apiDrives, students] = await Promise.all([getAllDrives(), getStudents()]);
+        setStudentCount(students.length);
+        setPlacedStudentCount(students.filter((student) => student.placement_status?.toLowerCase() === "placed").length);
+        const dashboardDrives = await Promise.all(apiDrives.map(async (drive: ApiDrive) => {
+          const registrations = await getDriveRegistrations(drive.driveId);
+          return {
+            id: drive.driveId,
+            companyName: drive.company?.c_name ?? "Company",
+            jobRole: drive.job_role,
+            ctc: drive.ctc_lpa,
+            deadline: new Date(drive.deadline).toLocaleDateString(),
+            registered: registrations.length,
+            eligible: students.length,
+            shortlisted: 0,
+          };
+        }));
+        setDrives(dashboardDrives);
+      } catch {
+        setError("Unable to load placement data from database.");
+      }
+    };
+
+    void loadDashboard();
+  }, [navigate]);
+
+  const finalYearStudents = studentCount;
+  const placedStudents = placedStudentCount;
+  const unplacedStudents = finalYearStudents - placedStudents;
+
+  const placementRate = finalYearStudents > 0
+    ? ((placedStudents / finalYearStudents) * 100).toFixed(1)
+    : "0.0";
 
   const handleNavigation = (page: string) => {
-    if (page === "profile") {
-      navigate("/director-profile");
-      return;
+    switch (page) {
+      case "dashboard":
+        navigate("/director-dashboard");
+        break;
+      case "students":
+        navigate("/director/students");
+        break;
+      case "companies":
+        navigate("/director/companies");
+        break;
+      case "drives":
+        navigate("/director/drives");
+        break;
+      case "create-drive":
+        navigate("/create-drive");
+        break;
+      case "applications":
+        navigate("/director/applications");
+        break;
+      case "rounds":
+        navigate("/director/rounds");
+        break;
+      case "shortlists":
+        navigate("/director/shortlists");
+        break;
+      case "profile":
+        navigate("/director-profile");
+        break;
+      default:
+        navigate("/director-dashboard");
+        break;
     }
-
-    if (page === "create-drive") {
-      navigate("/create-drive");
-      return;
-    }
-
-    setActivePage(page);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("hireon.role");
+    clearSession();
     navigate("/director-login-page", { replace: true });
   };
 
@@ -118,33 +113,34 @@ function DirectorDashboard() {
     navigate("/create-drive");
   };
 
-  const handleViewDrive = (drive: Drive) => {
-    console.log("View drive:", drive.id);
+  const handleViewDrive = (drive: DashboardDrive) => {
+    window.alert(`${drive.companyName}\n${drive.jobRole}\nCTC: ₹${drive.ctc} LPA\nDeadline: ${drive.deadline}`);
   };
 
-  const handleEditDrive = (drive: Drive) => {
-    console.log("Edit drive:", drive.id);
+  const handleEditDrive = (drive: DashboardDrive) => {
+    navigate(`/create-drive?driveId=${drive.id}`);
   };
 
   return (
     <div className="director-dashboard">
       <DirectorSidebar
-        activePage={activePage}
+        activePage="dashboard"
         onNavigate={handleNavigation}
         onLogout={handleLogout}
       />
 
       <div className="director-dashboard-main">
-        <DirectorHeader directorName="Placement Director" />
+        <DirectorHeader directorName={director?.name ?? "Placement Director"} />
 
         <main className="director-dashboard-content">
+
+          {error && <p role="alert">{error}</p>}
 
           <section className="director-welcome">
             <div>
               <h1>Placement Overview</h1>
               <p>
-                Monitor final year placements and ongoing
-                recruitment drives.
+                Monitor final year placements and ongoing recruitment drives.
               </p>
             </div>
 
@@ -184,8 +180,7 @@ function DirectorDashboard() {
               <div>
                 <h2>Placement Drives</h2>
                 <p>
-                  View and manage the drives currently handled
-                  by the placement cell.
+                  View and manage the drives currently handled by the placement cell.
                 </p>
               </div>
 
@@ -292,46 +287,13 @@ function DirectorDashboard() {
             </div>
 
             <div className="activity-list">
-
               <div className="activity-item">
                 <div>
-                  <strong>
-                    TCS - Round 2 shortlist uploaded
-                  </strong>
-                  <span>
-                    32 students shortlisted
-                  </span>
+                  <strong>Live placement database connected</strong>
+                  <span>All placement statistics and drive data are retrieved live from database.</span>
                 </div>
-
-                <span>2 hours ago</span>
+                <span>Current</span>
               </div>
-
-              <div className="activity-item">
-                <div>
-                  <strong>
-                    Infosys registration updated
-                  </strong>
-                  <span>
-                    98 students registered
-                  </span>
-                </div>
-
-                <span>5 hours ago</span>
-              </div>
-
-              <div className="activity-item">
-                <div>
-                  <strong>
-                    Wipro Round 1 completed
-                  </strong>
-                  <span>
-                    Shortlisting is pending
-                  </span>
-                </div>
-
-                <span>Yesterday</span>
-              </div>
-
             </div>
           </section>
 
