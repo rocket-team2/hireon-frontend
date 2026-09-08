@@ -59,7 +59,8 @@ function CreateDrive() {
       })
       .catch(() => setError("Unable to load companies. Make sure the backend is running."))
       .finally(() => setIsLoading(false));
-  }, [director, editDriveId, navigate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDepartmentChange = (department: string) => {
     setDepartments((currentDepartments) => currentDepartments.includes(department)

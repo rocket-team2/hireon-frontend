@@ -60,7 +60,8 @@ function StudentProfile() {
     if (window.location.hash === "#skills") {
       document.getElementById("skills")?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [navigate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const saveProfile = async () => {
     if (!student) return;

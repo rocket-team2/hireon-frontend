@@ -78,7 +78,8 @@ function StudentDashboard() {
     };
 
     void loadDashboard();
-  }, [navigate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleNavigation = (page: string) => {
     switch (page) {

@@ -30,7 +30,8 @@ function DirectorProfile() {
         setEmail(freshDirector.email);
       })
       .catch(() => setError("Unable to load your profile. Make sure the backend is running."));
-  }, [directorId, navigate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [directorId]);
 
   const saveProfile = async () => {
     if (!director) return;

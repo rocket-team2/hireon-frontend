@@ -24,12 +24,14 @@ function DirectorDrives() {
     const loadData = async () => {
       try {
         const drives = await getAllDrives();
-        const stats = await Promise.all(
-          drives.map(async (d) => {
-            const regs = await getDriveRegistrations(d.driveId);
-            return { drive: d, registrationsCount: regs.length };
-          })
+        // Fetch all registrations in parallel, not sequentially
+        const allRegs = await Promise.all(
+          drives.map((d) => getDriveRegistrations(d.driveId))
         );
+        const stats = drives.map((d, i) => ({
+          drive: d,
+          registrationsCount: allRegs[i].length,
+        }));
         setDrivesWithStats(stats);
       } catch {
         setError("Unable to load placement drives from database.");

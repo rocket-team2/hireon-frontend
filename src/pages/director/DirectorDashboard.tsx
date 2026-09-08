@@ -39,19 +39,23 @@ function DirectorDashboard() {
         const [apiDrives, students] = await Promise.all([getAllDrives(), getStudents()]);
         setStudentCount(students.length);
         setPlacedStudentCount(students.filter((student) => student.placement_status?.toLowerCase() === "placed").length);
-        const dashboardDrives = await Promise.all(apiDrives.map(async (drive: ApiDrive) => {
-          const registrations = await getDriveRegistrations(drive.driveId);
-          return {
-            id: drive.driveId,
-            companyName: drive.company?.c_name ?? "Company",
-            jobRole: drive.job_role,
-            ctc: drive.ctc_lpa,
-            deadline: new Date(drive.deadline).toLocaleDateString(),
-            registered: registrations.length,
-            eligible: students.length,
-            shortlisted: 0,
-          };
+
+        // Fetch all drive registrations in parallel (one request per drive, all at once)
+        const allRegistrations = await Promise.all(
+          apiDrives.map((drive: ApiDrive) => getDriveRegistrations(drive.driveId))
+        );
+
+        const dashboardDrives = apiDrives.map((drive: ApiDrive, index: number) => ({
+          id: drive.driveId,
+          companyName: drive.company?.c_name ?? "Company",
+          jobRole: drive.job_role,
+          ctc: drive.ctc_lpa,
+          deadline: new Date(drive.deadline).toLocaleDateString(),
+          registered: allRegistrations[index].length,
+          eligible: students.length,
+          shortlisted: 0,
         }));
+
         setDrives(dashboardDrives);
       } catch {
         setError("Unable to load placement data from database.");
@@ -59,7 +63,8 @@ function DirectorDashboard() {
     };
 
     void loadDashboard();
-  }, [navigate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const finalYearStudents = studentCount;
   const placedStudents = placedStudentCount;
