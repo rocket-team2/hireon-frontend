@@ -134,16 +134,15 @@ export const updateStudentStatus = (id: number, status: string, compId?: number)
 export const deleteStudent = (id: number) => request<string>(`/Student/Delete/${id}`, { method: "DELETE" });
 
 // Directors API
-export const getDirector = (id: number) => request<Director>(`/director/${id}`);
-export const registerDirector = (director: Partial<Director>) => request<Director>("/director/register", {
+export const getDirector = (id: number) => request<Director>(`/directors/${id}`);
+export const registerDirector = (director: Partial<Director>) => request<Director>("/directors/register", {
   method: "POST",
   body: JSON.stringify(director),
 });
-export const updateDirector = (id: number, director: Director) => request<Director>(`/director/${id}`, {
+export const updateDirector = (id: number, director: Director) => request<Director>(`/directors/${id}`, {
   method: "PUT",
   body: JSON.stringify(director),
 });
-
 // Companies API
 export const getCompanies = () => request<Company[]>("/Company");
 export const getCompany = (id: number) => request<Company>(`/Company/Id/${id}`);
