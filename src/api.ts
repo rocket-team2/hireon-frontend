@@ -143,7 +143,6 @@ export const updateDirector = (id: number, director: Director) => request<Direct
   method: "PUT",
   body: JSON.stringify(director),
 });
-
 // Companies API
 export const getCompanies = () => request<Company[]>("/Company");
 export const getCompany = (id: number) => request<Company>(`/Company/Id/${id}`);

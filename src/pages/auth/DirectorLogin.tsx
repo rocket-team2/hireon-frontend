@@ -17,7 +17,6 @@ function DirectorLogin() {
     setError("");
     setSuccess("");
     setIsLoading(true);
-
     try {
       const drives = await getAllDrives();
       const directors = drives
