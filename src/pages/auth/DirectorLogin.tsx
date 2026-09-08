@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getDirector, saveSession } from "../../api";
+import { getAllDrives, saveSession } from "../../api";
 import "./DirectorLogin.css";
 
 function DirectorLogin() {
@@ -19,17 +19,13 @@ function DirectorLogin() {
     setIsLoading(true);
 
     try {
-      let directorMatch;
-      for (let id = 1; id <= 20 && !directorMatch; id += 1) {
-        try {
-          const director = await getDirector(id);
-          if (director.email.toLowerCase() === email.trim().toLowerCase() && director.password === password) {
-            directorMatch = director;
-          }
-        } catch {
-          // The existing backend exposes directors by id, so missing ids are skipped.
-        }
-      }
+      const drives = await getAllDrives();
+      const directors = drives
+        .map((drive) => drive.director)
+        .filter((director): director is NonNullable<typeof director> => Boolean(director));
+      const directorMatch = directors.find(
+        (director) => director.email.toLowerCase() === email.trim().toLowerCase() && director.password === password,
+      );
 
       if (!directorMatch) {
         setError("The email or password is incorrect.");
