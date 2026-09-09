@@ -129,10 +129,6 @@ function StudentCompanies() {
   return (
     <StudentPageLayout activePage="companies" title="Companies Visited">
       <div className="student-companies-page">
-        <div className="student-companies-header">
-          <h1>Campus Recruiting Companies & Placed Students</h1>
-          <p>Browse corporate partners, placed students, and interview experience feedback links.</p>
-        </div>
 
         {successMsg && <div className="alert-success-box" role="status" style={{ marginBottom: "1rem" }}>✓ {successMsg}</div>}
         {error && <div className="alert-danger-box" role="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
