@@ -20,11 +20,11 @@ function DirectorShortlists() {
   const [selectedDriveId, setSelectedDriveId] = useState<number | null>(null);
   const [rounds, setRounds] = useState<DriveRound[]>([]);
   const [selectedRoundId, setSelectedRoundId] = useState<number | null>(null);
-
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [shortlistedList, setShortlistedList] = useState<ShortlistedStudent[]>([]);
   const [selectedStudentToShortlist, setSelectedStudentToShortlist] = useState<number | null>(null);
-
+  const [isBulkAdding, setIsBulkAdding] = useState(false);
+  const [showManualAddForNextRounds, setShowManualAddForNextRounds] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
