@@ -1,4 +1,11 @@
-import type { Student, Drive, RequiredSkill } from "../api";
+import {
+  type Student,
+  type Drive,
+  type RequiredSkill,
+  getPlacedApplicationsApi,
+  savePlacedApplicationApi,
+  updatePlacedApplicationStatusApi,
+} from "../api";
 
 export interface EligibilityResult {
   score: number; // 0 - 100
@@ -121,8 +128,8 @@ export function calculateEligibility(
   const allowedDepts = Array.isArray(drive.allowed_dept)
     ? (drive.allowed_dept as string[])
     : drive.allowed_dept && typeof drive.allowed_dept === "object"
-    ? Object.values(drive.allowed_dept as Record<string, string>)
-    : [];
+      ? Object.values(drive.allowed_dept as Record<string, string>)
+      : [];
 
   const studentDept = (student.department || "").trim().toLowerCase();
 
@@ -179,6 +186,47 @@ export function getPlacedApplications(): PlacedApplicationRequest[] {
   }
 }
 
+/**
+ * Syncs local storage with backend database.
+ * Uploads local entries to backend if missing, and downloads backend entries.
+ */
+export async function syncPlacedApplicationsWithServer(): Promise<PlacedApplicationRequest[]> {
+  try {
+    const local = getPlacedApplications();
+    const remote = await getPlacedApplicationsApi();
+
+    // Map by id and by (driveId + studentId)
+    const map = new Map<string, PlacedApplicationRequest>();
+    for (const r of remote) {
+      const key = `${r.driveId}_${r.studentId}`;
+      map.set(key, r as PlacedApplicationRequest);
+    }
+
+    // Merge any existing local ones that haven't reached server yet
+    for (const l of local) {
+      const key = `${l.driveId}_${l.studentId}`;
+      if (!map.has(key)) {
+        map.set(key, l);
+        // Upload to server in background
+        void savePlacedApplicationApi(l as any).catch(() => { });
+      } else {
+        // If remote has it, remote takes precedence unless local was updated
+        const existing = map.get(key)!;
+        if (l.status !== existing.status && l.status !== "PENDING") {
+          map.set(key, l);
+        }
+      }
+    }
+
+    const merged = Array.from(map.values());
+    localStorage.setItem(PLACED_APPS_KEY, JSON.stringify(merged));
+    window.dispatchEvent(new Event("placed_apps_synced"));
+    return merged;
+  } catch {
+    return getPlacedApplications();
+  }
+}
+
 export function savePlacedApplicationRequest(
   drive: Drive,
   student: Student
@@ -187,7 +235,11 @@ export function savePlacedApplicationRequest(
   const existing = current.find(
     (req) => req.driveId === drive.driveId && req.studentId === student.sId
   );
-  if (existing) return existing;
+  if (existing) {
+    // Attempt background sync if not on server
+    void savePlacedApplicationApi(existing as any).catch(() => { });
+    return existing;
+  }
 
   const newReq: PlacedApplicationRequest = {
     id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
@@ -212,6 +264,13 @@ export function savePlacedApplicationRequest(
 
   current.push(newReq);
   localStorage.setItem(PLACED_APPS_KEY, JSON.stringify(current));
+  window.dispatchEvent(new Event("placed_apps_synced"));
+
+  // Persist to backend database
+  void savePlacedApplicationApi(newReq as any).catch((err) => {
+    console.warn("Notice: server sync queued", err);
+  });
+
   return newReq;
 }
 
@@ -224,7 +283,14 @@ export function updatePlacedApplicationStatus(
     req.id === requestId ? { ...req, status } : req
   );
   localStorage.setItem(PLACED_APPS_KEY, JSON.stringify(updated));
+  window.dispatchEvent(new Event("placed_apps_synced"));
+
+  // Persist status update to backend database
+  void updatePlacedApplicationStatusApi(requestId, status).catch((err) => {
+    console.warn("Notice: server status sync queued", err);
+  });
 }
+
 
 // Interview Feedback Storage Functions
 const INTERVIEW_FEEDBACK_KEY = "hireon.interview_feedback";
@@ -282,7 +348,7 @@ export function generateStudentEmailContent(
   skills: { name: string; proficiency: number }[] = []
 ): { subject: string; body: string } {
   const subject = `Placement Candidate Profile: ${student.name} (${student.reg_no}) - ${student.department}`;
-  
+
   const skillLines =
     skills.length > 0
       ? skills.map((s) => `- ${s.name}: ${s.proficiency}/5 Stars (${s.proficiency * 20}% Proficiency)`).join("\n")

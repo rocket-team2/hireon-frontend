@@ -16,8 +16,11 @@ import {
 import {
   calculateEligibility,
   getCompanyLogoUrl,
+  getPlacedApplications,
   savePlacedApplicationRequest,
+  syncPlacedApplicationsWithServer,
   type EligibilityResult,
+  type PlacedApplicationRequest,
 } from "../../utils/eligibility";
 import "./StudentDriveDetails.css";
 
@@ -33,6 +36,7 @@ function StudentDriveDetails() {
   const [error, setError] = useState("");
   const [placedModalOpen, setPlacedModalOpen] = useState(false);
   const [placedSuccessMsg, setPlacedSuccessMsg] = useState("");
+  const [placedRequest, setPlacedRequest] = useState<PlacedApplicationRequest | null>(null);
 
   const session = JSON.parse(localStorage.getItem("hireon.session") || "null");
   const student = session?.role === "student" ? (session.user as Student) : null;
@@ -41,8 +45,27 @@ function StudentDriveDetails() {
   const department = student?.department || "";
 
   useEffect(() => {
-    loadDrive();
-  }, [id]);
+    void loadDrive();
+
+    const handleSync = () => {
+      if (!id || !studentId) return;
+      const driveId = Number(id);
+      const reqs = getPlacedApplications();
+      const req = reqs.find((r) => r.driveId === driveId && r.studentId === studentId) || null;
+      setPlacedRequest(req);
+      if (req?.status === "APPROVED") {
+        setRegistered(true);
+      }
+    };
+
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("placed_apps_synced", handleSync);
+
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("placed_apps_synced", handleSync);
+    };
+  }, [id, studentId]);
 
   const loadDrive = async () => {
     if (!id) return;
@@ -71,6 +94,23 @@ function StudentDriveDetails() {
         } catch (err) {
           console.log("Unable to check registration", err);
         }
+
+        // Sync and check if placed student has submitted an approval request
+        try {
+          const reqs = await syncPlacedApplicationsWithServer();
+          const req = reqs.find((r) => r.driveId === driveId && r.studentId === studentId) || null;
+          setPlacedRequest(req);
+          if (req?.status === "APPROVED") {
+            setRegistered(true);
+          }
+        } catch {
+          const reqs = getPlacedApplications();
+          const req = reqs.find((r) => r.driveId === driveId && r.studentId === studentId) || null;
+          setPlacedRequest(req);
+          if (req?.status === "APPROVED") {
+            setRegistered(true);
+          }
+        }
       }
     } catch (err) {
       console.error(err);
@@ -83,13 +123,17 @@ function StudentDriveDetails() {
   const handleRegisterClick = () => {
     if (!drive || !student) return;
 
-    // Requirement 7: Placed student popup
+    // Placed student requires Director approval before registration
     const isPlaced = student.placement_status === "Placed" || Boolean(student.company);
     if (isPlaced) {
+      if (placedRequest?.status === "PENDING" || placedRequest?.status === "REJECTED" || registered) {
+        return;
+      }
       setPlacedModalOpen(true);
       return;
     }
 
+    // Unplaced student: directly register for drive
     void executeRegister();
   };
 
@@ -110,10 +154,10 @@ function StudentDriveDetails() {
 
   const handleConfirmPlacedApplication = () => {
     if (!drive || !student) return;
-    savePlacedApplicationRequest(drive, student);
-    setPlacedSuccessMsg(`Approval request for ${drive.company?.c_name ?? "Company"} submitted to Director!`);
+    const saved = savePlacedApplicationRequest(drive, student);
+    setPlacedRequest(saved);
+    setPlacedSuccessMsg(`Approval request for ${drive.company?.c_name ?? "Company"} submitted to Placement Director! Once approved, your registration will be activated.`);
     setPlacedModalOpen(false);
-    setTimeout(() => setPlacedSuccessMsg(""), 5000);
   };
 
   const handleNavigation = (page: string) => {
@@ -413,34 +457,119 @@ function StudentDriveDetails() {
             </div>
           </section>
 
+          {/* Placed Student Status Notice Banner if applicable */}
+          {isStudentPlaced && placedRequest && (
+            <section style={{ marginTop: "1rem" }}>
+              {placedRequest.status === "PENDING" && (
+                <div className="alert-process-box">
+                  <strong>⏳ Director Approval Pending</strong>
+                  <p style={{ margin: "4px 0 0", fontSize: "0.9rem" }}>
+                    Your application request for <strong>{drive.company?.c_name} - {drive.job_role}</strong> was submitted on {placedRequest.requestedAt} and is currently under review by the Placement Director. You cannot register directly until the Director approves.
+                  </p>
+                </div>
+              )}
+              {placedRequest.status === "REJECTED" && (
+                <div className="alert-danger-box">
+                  <strong>❌ Director Rejected Application</strong>
+                  <p style={{ margin: "4px 0 0", fontSize: "0.9rem" }}>
+                    The Placement Director has rejected your application request for this drive. In accordance with institution policy, placed students cannot register for this drive without approval.
+                  </p>
+                </div>
+              )}
+              {placedRequest.status === "APPROVED" && (
+                <div className="alert-success-box">
+                  <strong>✓ Director Approved!</strong>
+                  <p style={{ margin: "4px 0 0", fontSize: "0.9rem" }}>
+                    The Placement Director has approved your application request! You are officially registered for this drive.
+                  </p>
+                </div>
+              )}
+            </section>
+          )}
+
           {/* Requirement 9: Register Section */}
-          <section className="drive-application-card">
+          <section className="drive-application-card" style={{ marginTop: "1.5rem" }}>
             <div>
-              <h2>{registered ? "✓ Registered for Drive" : "Ready to Apply?"}</h2>
-              <p>
-                {registered
-                  ? "You have successfully registered for this placement drive."
-                  : isExpired
-                  ? "The registration deadline for this drive has passed."
-                  : `Apply before ${deadline.toLocaleDateString("en-IN")}.`}
-              </p>
+              {registered ? (
+                <>
+                  <h2>✓ Registered for Drive</h2>
+                  <p>
+                    {isStudentPlaced
+                      ? "The Placement Director has approved your application. You are successfully registered for this drive."
+                      : "You have successfully registered for this placement drive."}
+                  </p>
+                </>
+              ) : isStudentPlaced ? (
+                placedRequest?.status === "PENDING" ? (
+                  <>
+                    <h2 style={{ color: "#b45309" }}>⏳ Approval Pending with Director</h2>
+                    <p>
+                      Your request has been submitted to the Placement Director. Once approved, you will be registered automatically.
+                    </p>
+                  </>
+                ) : placedRequest?.status === "REJECTED" ? (
+                  <>
+                    <h2 style={{ color: "#b91c1c" }}>❌ Registration Denied</h2>
+                    <p>
+                      The Placement Director rejected your request to apply. Registration is not permitted for this drive.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h2>Director Approval Required</h2>
+                    <p>
+                      You are currently placed at <strong>{student?.company?.c_name ?? "your company"}</strong>. Placed students must submit an approval request to the Director before registering.
+                    </p>
+                  </>
+                )
+              ) : (
+                <>
+                  <h2>Ready to Apply?</h2>
+                  <p>
+                    {isExpired
+                      ? "The registration deadline for this drive has passed."
+                      : `Apply before ${deadline.toLocaleDateString("en-IN")}. Direct registration is available.`}
+                  </p>
+                </>
+              )}
             </div>
 
             <button
-              className="register-button"
-              disabled={isExpired || registered || registering || !isEligible}
+              className={`register-button ${registered
+                ? "registered"
+                : isStudentPlaced && placedRequest?.status === "PENDING"
+                  ? "pending-approval"
+                  : isStudentPlaced && placedRequest?.status === "REJECTED"
+                    ? "rejected-approval"
+                    : isStudentPlaced
+                      ? "request-approval"
+                      : isEligible
+                        ? "eligible"
+                        : "disabled"
+                }`}
+              disabled={
+                isExpired ||
+                registered ||
+                registering ||
+                !isEligible ||
+                (isStudentPlaced && (placedRequest?.status === "PENDING" || placedRequest?.status === "REJECTED"))
+              }
               onClick={handleRegisterClick}
               style={{ padding: "12px 24px", fontSize: "1rem" }}
             >
               {registering
                 ? "Registering..."
                 : registered
-                ? "✓ Registered"
-                : isExpired
-                ? "Applications Closed"
-                : isStudentPlaced
-                ? "Register (Placed Student)"
-                : "Register for Drive"}
+                  ? "✓ Registered"
+                  : isExpired
+                    ? "Applications Closed"
+                    : isStudentPlaced
+                      ? placedRequest?.status === "PENDING"
+                        ? "⏳ Approval Pending"
+                        : placedRequest?.status === "REJECTED"
+                          ? "✕ Registration Rejected"
+                          : "Request Director Approval"
+                      : "Register for Drive"}
             </button>
           </section>
         </main>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   deleteRegistration,
   getAllDrives,
@@ -10,6 +10,7 @@ import {
 import {
   calculateEligibility,
   getPlacedApplications,
+  syncPlacedApplicationsWithServer,
   updatePlacedApplicationStatus,
   type PlacedApplicationRequest,
 } from "../../utils/eligibility";
@@ -25,6 +26,19 @@ function DirectorApplications() {
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const refreshPlacedRequests = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      const synced = await syncPlacedApplicationsWithServer();
+      setPlacedRequests(synced);
+    } catch {
+      setPlacedRequests(getPlacedApplications());
+    } finally {
+      setIsSyncing(false);
+    }
+  }, []);
 
   useEffect(() => {
     void getAllDrives()
@@ -37,9 +51,37 @@ function DirectorApplications() {
       .catch(() => setError("Unable to load placement drives from database."))
       .finally(() => setIsLoading(false));
 
-    // Load placed student requests
-    setPlacedRequests(getPlacedApplications());
-  }, []);
+    // Initial load and sync
+    void refreshPlacedRequests();
+
+    // Listen to real-time events from other tabs and windows
+    const handleSyncEvent = () => {
+      void refreshPlacedRequests();
+    };
+
+    window.addEventListener("storage", handleSyncEvent);
+    window.addEventListener("placed_apps_synced", handleSyncEvent);
+    window.addEventListener("focus", handleSyncEvent);
+
+    // Auto-refresh polling every 3 seconds
+    const interval = setInterval(() => {
+      void refreshPlacedRequests();
+    }, 3000);
+
+    return () => {
+      window.removeEventListener("storage", handleSyncEvent);
+      window.removeEventListener("placed_apps_synced", handleSyncEvent);
+      window.removeEventListener("focus", handleSyncEvent);
+      clearInterval(interval);
+    };
+  }, [refreshPlacedRequests]);
+
+  // Re-sync whenever tab is switched
+  useEffect(() => {
+    if (activeTab === "placed_approval") {
+      void refreshPlacedRequests();
+    }
+  }, [activeTab, refreshPlacedRequests]);
 
   useEffect(() => {
     if (!selectedDriveId) {
@@ -72,21 +114,27 @@ function DirectorApplications() {
       // Register student into drive in backend
       await registerForDrive(req.driveId, req.studentId);
       updatePlacedApplicationStatus(req.id, "APPROVED");
-      setPlacedRequests(getPlacedApplications());
+      await refreshPlacedRequests();
+      if (selectedDriveId === req.driveId) {
+        void getDriveRegistrations(selectedDriveId).then((data) => setRegistrations(data));
+      }
       setSuccessMsg(`Approved and registered ${req.studentName} for ${req.companyName}!`);
       setTimeout(() => setSuccessMsg(""), 5000);
     } catch (err: any) {
-      // If already registered or error, update local status
+      // If already registered or error, update status
       updatePlacedApplicationStatus(req.id, "APPROVED");
-      setPlacedRequests(getPlacedApplications());
+      await refreshPlacedRequests();
+      if (selectedDriveId === req.driveId) {
+        void getDriveRegistrations(selectedDriveId).then((data) => setRegistrations(data));
+      }
       setSuccessMsg(`Application approved for ${req.studentName}.`);
       setTimeout(() => setSuccessMsg(""), 5000);
     }
   };
 
-  const handleRejectPlacedRequest = (req: PlacedApplicationRequest) => {
+  const handleRejectPlacedRequest = async (req: PlacedApplicationRequest) => {
     updatePlacedApplicationStatus(req.id, "REJECTED");
-    setPlacedRequests(getPlacedApplications());
+    await refreshPlacedRequests();
     setSuccessMsg(`Rejected application request for ${req.studentName}.`);
     setTimeout(() => setSuccessMsg(""), 4000);
   };
@@ -103,7 +151,7 @@ function DirectorApplications() {
             <p>Review student drive registrations and approve applications from placed students.</p>
           </div>
 
-          <div style={{ display: "flex", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
             <button
               type="button"
               className={activeTab === "registrations" ? "badge-process" : "details-button"}
@@ -116,9 +164,28 @@ function DirectorApplications() {
               type="button"
               className={activeTab === "placed_approval" ? "badge-success" : "details-button"}
               style={{ padding: "8px 16px", cursor: "pointer", border: "1px solid #C3E2A0" }}
-              onClick={() => setActiveTab("placed_approval")}
+              onClick={() => {
+                setActiveTab("placed_approval");
+                void refreshPlacedRequests();
+              }}
             >
               Placed Students Requests {pendingRequestsCount > 0 && `(${pendingRequestsCount} Pending)`}
+            </button>
+            <button
+              type="button"
+              title="Sync with database server"
+              style={{
+                padding: "8px 12px",
+                cursor: "pointer",
+                borderRadius: "8px",
+                border: "1px solid #CBD5E1",
+                background: "#F8FAFC",
+                fontSize: "0.85rem",
+                color: "#475569",
+              }}
+              onClick={() => void refreshPlacedRequests()}
+            >
+              {isSyncing ? "↻ Syncing..." : "↻ Refresh"}
             </button>
           </div>
         </div>

@@ -254,6 +254,39 @@ export const deleteRequiredSkill = (driveId: number, skillId: number, reqData?: 
   body: JSON.stringify(reqData ?? {}),
 });
 
+// Placed Student Applications API
+export interface PlacedApplicationApiData {
+  id: string;
+  driveId: number;
+  driveTitle: string;
+  companyName: string;
+  studentId: number;
+  studentName: string;
+  studentRegNo: string;
+  studentDept: string;
+  studentCgpa: number;
+  placedCompany: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  requestedAt: string;
+}
+
+export const getPlacedApplicationsApi = () =>
+  request<PlacedApplicationApiData[]>("/placed-applications");
+
+export const getPlacedApplicationsByStudentApi = (studentId: number) =>
+  request<PlacedApplicationApiData[]>(`/placed-applications/student/${studentId}`);
+
+export const savePlacedApplicationApi = (reqData: PlacedApplicationApiData) =>
+  request<PlacedApplicationApiData>("/placed-applications", {
+    method: "POST",
+    body: JSON.stringify(reqData),
+  });
+
+export const updatePlacedApplicationStatusApi = (id: string, status: string) =>
+  request<PlacedApplicationApiData>(`/placed-applications/${id}/status?status=${encodeURIComponent(status)}`, {
+    method: "PUT",
+  });
+
 // Sessions
 export function getSession(): Session | null {
   const value = localStorage.getItem("hireon.session");

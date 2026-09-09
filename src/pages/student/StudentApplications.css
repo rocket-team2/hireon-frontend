@@ -79,6 +79,26 @@
   background: #fef2f2;
 }
 
+.application-card.card-pending {
+  border-left: 4px solid #f59e0b;
+  background: #fffdfa;
+}
+
+.application-card.card-rejected {
+  border-left: 4px solid #ef4444;
+  background: #fffbfa;
+}
+
+.app-badge.badge-pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.app-badge.badge-rejected {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
 .empty-applications {
   text-align: center;
   padding: 3rem;
@@ -87,3 +107,4 @@
   border: 1px solid #e5e7eb;
   color: #6b7280;
 }
+
