@@ -22,7 +22,16 @@ function StudentSidebar({
 
   return (
     <aside className="student-sidebar">
-      <div className="student-sidebar-logo">HireOn</div>
+      <div className="student-sidebar-logo">
+        <img
+          src="/logo.png"
+          alt="HireOn Logo"
+          className="sidebar-logo-img"
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+        />
+      </div>
 
       <nav className="student-sidebar-menu">
         {menuItems.map((item) => (
