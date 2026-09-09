@@ -98,10 +98,6 @@ function DirectorApplications() {
     <DirectorPageLayout activePage="applications" title="Applications">
       <div className="director-applications-page">
         <div className="director-applications-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <h1>Drive Applications & Authority Controls</h1>
-            <p>Review student drive registrations and approve applications from placed students.</p>
-          </div>
 
           <div style={{ display: "flex", gap: "10px" }}>
             <button

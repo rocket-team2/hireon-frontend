@@ -57,10 +57,7 @@ function DirectorProfile() {
       <div className="director-profile-page">
         <div className="director-profile-container">
           <div className="director-profile-header">
-            <div>
-              <h1>My Profile</h1>
-              <p>View and update your placement director account details.</p>
-            </div>
+
             <div className="profile-header-actions">
               <button type="button" onClick={() => navigate("/director-dashboard")}>Back to Dashboard</button>
               <button type="button" onClick={isEditing ? () => void saveProfile() : () => setIsEditing(true)}>

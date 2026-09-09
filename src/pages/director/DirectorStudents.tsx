@@ -95,11 +95,6 @@ function DirectorStudents() {
   return (
     <DirectorPageLayout activePage="students" title="Students">
       <div className="director-students-page">
-        <div className="students-header">
-          <h1>Student Placement Directory</h1>
-          <p>View and manage all registered students, company placements, and skill reports.</p>
-        </div>
-
         {message && <div className="alert-success-box" role="status" style={{ marginBottom: "1rem" }}>✓ {message}</div>}
         {error && <div className="alert-danger-box" role="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
 
