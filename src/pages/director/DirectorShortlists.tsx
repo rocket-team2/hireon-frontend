@@ -167,13 +167,6 @@ function DirectorShortlists() {
   return (
     <DirectorPageLayout activePage="shortlists" title="Shortlists">
       <div className="director-shortlists-page">
-        <div className="shortlists-header">
-          <h1>Recruitment Pipeline & Shortlists</h1>
-          <p>
-            Review candidates for each round. When a candidate is marked <strong>SELECTED</strong>,
-            they automatically advance to the next round immediately.
-          </p>
-        </div>
 
         {message && (
           <div className="alert-box success-alert" role="status">

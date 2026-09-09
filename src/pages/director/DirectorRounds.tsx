@@ -86,10 +86,6 @@ function DirectorRounds() {
   return (
     <DirectorPageLayout activePage="rounds" title="Recruitment Rounds">
       <div className="director-rounds-page">
-        <div className="rounds-header">
-          <h1>Recruitment Rounds</h1>
-          <p>Create and manage selection rounds (Online Test, Technical, HR) for drives.</p>
-        </div>
 
         {message && <p role="status" style={{ color: "#059669", marginBottom: "1rem" }}>{message}</p>}
         {error && <p role="alert" style={{ color: "#dc2626", marginBottom: "1rem" }}>{error}</p>}
