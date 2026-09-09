@@ -129,11 +129,6 @@ function StudentProfile() {
       <div className="student-profile-page">
         <div className="student-profile-container">
           <div className="student-profile-header">
-            <div>
-              <h1>My Profile</h1>
-              <p>Manage your personal details, academic metrics, and skill proficiencies.</p>
-            </div>
-
             <div className="profile-header-actions" style={{ display: "flex", gap: "10px" }}>
               <button
                 type="button"

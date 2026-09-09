@@ -137,10 +137,6 @@ function StudentSkills() {
       <div className="student-skills-page">
         <div className="student-skills-container">
           <div className="student-skills-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <h1>My Skills & Proficiencies</h1>
-              <p>Record your technical proficiencies and share skill reports with recruiters.</p>
-            </div>
             <div style={{ display: "flex", gap: "10px" }}>
               {/* Requirement 8: Email Trigger Button */}
               <button

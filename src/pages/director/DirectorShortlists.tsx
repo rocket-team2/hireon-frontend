@@ -117,10 +117,6 @@ function DirectorShortlists() {
   return (
     <DirectorPageLayout activePage="shortlists" title="Shortlists">
       <div className="director-shortlists-page">
-        <div className="shortlists-header">
-          <h1>Shortlisted Students</h1>
-          <p>Shortlist candidates for each round, update status, and provide feedback.</p>
-        </div>
 
         {message && <p role="status" style={{ color: "#059669", marginBottom: "1rem" }}>{message}</p>}
         {error && <p role="alert" style={{ color: "#dc2626", marginBottom: "1rem" }}>{error}</p>}

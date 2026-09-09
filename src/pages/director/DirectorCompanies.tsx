@@ -152,12 +152,6 @@ function DirectorCompanies() {
   return (
     <DirectorPageLayout activePage="companies" title="Companies Visited">
       <div className="director-companies-page">
-        <div className="companies-header">
-          <div>
-            <h1>Corporate Directory & Interview Feedback</h1>
-            <p>Manage recruiting corporate partners, placed students, and interview experience feedback links.</p>
-          </div>
-        </div>
 
         {message && <div className="alert-success-box" role="status" style={{ marginBottom: "1rem" }}>✓ {message}</div>}
         {error && <div className="alert-danger-box" role="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
