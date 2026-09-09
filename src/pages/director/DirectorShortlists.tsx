@@ -25,7 +25,6 @@ function DirectorShortlists() {
   const [selectedStudentToShortlist, setSelectedStudentToShortlist] = useState<number | null>(null);
   const [isBulkAdding, setIsBulkAdding] = useState(false);
   const [showManualAddForNextRounds, setShowManualAddForNextRounds] = useState(false);
-
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
