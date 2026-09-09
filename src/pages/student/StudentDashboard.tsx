@@ -12,8 +12,11 @@ import {
 import {
   calculateEligibility,
   getCompanyLogoUrl,
+  getPlacedApplications,
   savePlacedApplicationRequest,
+  syncPlacedApplicationsWithServer,
   type EligibilityResult,
+  type PlacedApplicationRequest,
 } from "../../utils/eligibility";
 import StudentSidebar from "./components/StudentSidebar";
 import StudentHeader from "./components/StudentHeader";
@@ -41,6 +44,7 @@ function StudentDashboard() {
   const [error, setError] = useState("");
   const [placedPopupDrive, setPlacedPopupDrive] = useState<DashboardDrive | null>(null);
   const [placedSuccessMsg, setPlacedSuccessMsg] = useState("");
+  const [placedRequests, setPlacedRequests] = useState<PlacedApplicationRequest[]>([]);
   const navigate = useNavigate();
 
   const [showAllDrives, setShowAllDrives] = useState(false);
@@ -104,12 +108,28 @@ function StudentDashboard() {
         });
 
         setDrives(mapped);
+        try {
+          const synced = await syncPlacedApplicationsWithServer();
+          setPlacedRequests(synced);
+        } catch {
+          setPlacedRequests(getPlacedApplications());
+        }
       } catch {
-        setError("Unable to load placement drives from database.");
+        setError("Unable to load drives. Please refresh the page.");
       }
     };
 
     void loadDashboard();
+
+    const handleSync = () => {
+      setPlacedRequests(getPlacedApplications());
+    };
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("placed_apps_synced", handleSync);
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("placed_apps_synced", handleSync);
+    };
   }, [navigate]);
 
   const handleNavigation = (page: string) => {
@@ -149,13 +169,18 @@ function StudentDashboard() {
   const handleRegisterClick = (drive: DashboardDrive) => {
     if (!student) return;
 
-    // Requirement 7: Placed student popup
+    // Placed student requires Director approval before registration
     const isPlaced = student.placement_status === "Placed" || Boolean(student.company);
     if (isPlaced) {
+      const existingReq = placedRequests.find((r) => r.driveId === drive.id && r.studentId === student.sId);
+      if (existingReq?.status === "PENDING" || existingReq?.status === "REJECTED" || drive.registered) {
+        return;
+      }
       setPlacedPopupDrive(drive);
       return;
     }
 
+    // Unplaced student: directly register for drive
     void executeRegister(drive);
   };
 
@@ -176,9 +201,9 @@ function StudentDashboard() {
   const handleConfirmPlacedApplication = () => {
     if (!placedPopupDrive || !student) return;
     savePlacedApplicationRequest(placedPopupDrive.apiDrive, student);
-    setPlacedSuccessMsg(`Approval request for ${placedPopupDrive.company} submitted to Director!`);
+    setPlacedRequests(getPlacedApplications());
+    setPlacedSuccessMsg(`Approval request for ${placedPopupDrive.company} submitted to Placement Director! Once approved, your registration will be activated.`);
     setPlacedPopupDrive(null);
-    setTimeout(() => setPlacedSuccessMsg(""), 5000);
   };
 
   const handleViewDetails = (drive: DashboardDrive) => {
@@ -331,26 +356,49 @@ function StudentDashboard() {
                       </button>
 
                       {/* Requirement 9: Register Button */}
-                      <button
-                        type="button"
-                        className={`register-button ${
-                          drive.registered
-                            ? "registered"
-                            : isEligible
-                            ? "eligible"
-                            : "disabled"
-                        }`}
-                        disabled={!isEligible || drive.registered}
-                        onClick={() => handleRegisterClick(drive)}
-                      >
-                        {drive.registered
-                          ? "✓ Registered"
-                          : isEligible
-                          ? isStudentPlaced
-                            ? "Register (Apply)"
-                            : "Register Now"
-                          : "Not Eligible"}
-                      </button>
+                      {(() => {
+                        const drivePlacedReq = isStudentPlaced
+                          ? placedRequests.find((r) => r.driveId === drive.id && r.studentId === student?.sId)
+                          : null;
+
+                        return (
+                          <button
+                            type="button"
+                            className={`register-button ${
+                              drive.registered || drivePlacedReq?.status === "APPROVED"
+                                ? "registered"
+                                : isStudentPlaced && drivePlacedReq?.status === "PENDING"
+                                ? "pending-approval"
+                                : isStudentPlaced && drivePlacedReq?.status === "REJECTED"
+                                ? "rejected-approval"
+                                : isStudentPlaced
+                                ? "request-approval"
+                                : isEligible
+                                ? "eligible"
+                                : "disabled"
+                            }`}
+                            disabled={
+                              !isEligible ||
+                              drive.registered ||
+                              drivePlacedReq?.status === "APPROVED" ||
+                              (isStudentPlaced && (drivePlacedReq?.status === "PENDING" || drivePlacedReq?.status === "REJECTED"))
+                            }
+                            onClick={() => handleRegisterClick(drive)}
+                          >
+                            {drive.registered || drivePlacedReq?.status === "APPROVED"
+                              ? "✓ Registered"
+                              : !isEligible
+                              ? "Not Eligible"
+                              : isStudentPlaced
+                              ? drivePlacedReq?.status === "PENDING"
+                                ? "⏳ Approval Pending"
+                                : drivePlacedReq?.status === "REJECTED"
+                                ? "✕ Rejected by Director"
+                                : "Request Approval"
+                              : "Register Now"}
+                          </button>
+                        );
+                      })()}
                     </div>
                   </div>
                 );

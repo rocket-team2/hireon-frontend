@@ -7,28 +7,33 @@ import {
   registerForDrive,
   type Drive as ApiDrive,
   type Student,
+  type Drive,
 } from "../../api";
 import {
   calculateEligibility,
   getCompanyLogoUrl,
+  getPlacedApplications,
   savePlacedApplicationRequest,
+  syncPlacedApplicationsWithServer,
   type EligibilityResult,
+  type PlacedApplicationRequest,
 } from "../../utils/eligibility";
 import StudentPageLayout from "./components/StudentPageLayout";
 import "./StudentDashboard.css";
 import "./StudentDrives.css";
 
 interface DisplayDrive {
-  apiDrive: ApiDrive;
   id: number;
   company: string;
   companyLogoUrl: string;
   role: string;
   ctc: number;
   deadline: string;
-  eligibilityResult: EligibilityResult;
+  isExpired: boolean;
   registered: boolean;
   departments: string[];
+  eligibilityResult: EligibilityResult;
+  apiDrive: Drive;
 }
 
 function StudentDrives() {
@@ -39,6 +44,7 @@ function StudentDrives() {
   const [isLoading, setIsLoading] = useState(true);
   const [placedPopupDrive, setPlacedPopupDrive] = useState<DisplayDrive | null>(null);
   const [placedSuccessMsg, setPlacedSuccessMsg] = useState("");
+  const [placedRequests, setPlacedRequests] = useState<PlacedApplicationRequest[]>([]);
   const [student] = useState<Student | null>(() => {
     const session = getSession();
     return session?.role === "student" ? (session.user as Student) : null;
@@ -64,6 +70,10 @@ function StudentDrives() {
             ? Object.values(drive.allowed_dept as Record<string, string>)
             : [];
 
+          const isExpired = Boolean(
+            drive.deadline && new Date(drive.deadline).getTime() < Date.now()
+          );
+
           return {
             apiDrive: drive,
             id: drive.driveId,
@@ -76,6 +86,7 @@ function StudentDrives() {
               month: "short",
               year: "numeric",
             }),
+            isExpired,
             eligibilityResult: eligResult,
             registered: registeredIds.has(drive.driveId),
             departments: depts,
@@ -96,6 +107,12 @@ function StudentDrives() {
         });
 
         setDrives(mapped);
+        try {
+          const synced = await syncPlacedApplicationsWithServer();
+          setPlacedRequests(synced);
+        } catch {
+          setPlacedRequests(getPlacedApplications());
+        }
       } catch {
         setError("Unable to fetch placement drives from the database.");
       } finally {
@@ -104,18 +121,33 @@ function StudentDrives() {
     };
 
     void loadDrives();
+
+    const handleSync = () => {
+      setPlacedRequests(getPlacedApplications());
+    };
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("placed_apps_synced", handleSync);
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("placed_apps_synced", handleSync);
+    };
   }, [student]);
 
   const handleRegisterClick = (drive: DisplayDrive) => {
     if (!student) return;
 
-    // Requirement 7: Placed student popup
+    // Placed student requires Director approval before registration
     const isPlaced = student.placement_status === "Placed" || Boolean(student.company);
     if (isPlaced) {
+      const existingReq = placedRequests.find((r) => r.driveId === drive.id && r.studentId === student.sId);
+      if (existingReq?.status === "PENDING" || existingReq?.status === "REJECTED" || drive.registered) {
+        return;
+      }
       setPlacedPopupDrive(drive);
       return;
     }
 
+    // Unplaced student: directly register for drive
     void executeRegister(drive);
   };
 
@@ -134,9 +166,9 @@ function StudentDrives() {
   const handleConfirmPlacedApplication = () => {
     if (!placedPopupDrive || !student) return;
     savePlacedApplicationRequest(placedPopupDrive.apiDrive, student);
-    setPlacedSuccessMsg(`Approval request for ${placedPopupDrive.company} submitted to Director!`);
+    setPlacedRequests(getPlacedApplications());
+    setPlacedSuccessMsg(`Approval request for ${placedPopupDrive.company} submitted to Placement Director! Once approved, your registration will be activated.`);
     setPlacedPopupDrive(null);
-    setTimeout(() => setPlacedSuccessMsg(""), 5000);
   };
 
   const filteredDrives = drives.filter(
@@ -278,22 +310,49 @@ function StudentDrives() {
                       </div>
 
                       {/* Requirement 9: Register Button */}
-                      <button
-                        type="button"
-                        className={`register-button ${
-                          drive.registered ? "registered" : isEligible ? "eligible" : "disabled"
-                        }`}
-                        disabled={!isEligible || drive.registered}
-                        onClick={() => handleRegisterClick(drive)}
-                      >
-                        {drive.registered
-                          ? "✓ Registered"
-                          : isEligible
-                          ? isStudentPlaced
-                            ? "Register (Apply)"
-                            : "Register Now"
-                          : "Not Eligible"}
-                      </button>
+                      {(() => {
+                        const drivePlacedReq = isStudentPlaced
+                          ? placedRequests.find((r) => r.driveId === drive.id && r.studentId === student?.sId)
+                          : null;
+
+                        return (
+                          <button
+                            type="button"
+                            className={`register-button ${
+                              drive.registered || drivePlacedReq?.status === "APPROVED"
+                                ? "registered"
+                                : isStudentPlaced && drivePlacedReq?.status === "PENDING"
+                                ? "pending-approval"
+                                : isStudentPlaced && drivePlacedReq?.status === "REJECTED"
+                                ? "rejected-approval"
+                                : isStudentPlaced
+                                ? "request-approval"
+                                : isEligible
+                                ? "eligible"
+                                : "disabled"
+                            }`}
+                            disabled={
+                              !isEligible ||
+                              drive.registered ||
+                              drivePlacedReq?.status === "APPROVED" ||
+                              (isStudentPlaced && (drivePlacedReq?.status === "PENDING" || drivePlacedReq?.status === "REJECTED"))
+                            }
+                            onClick={() => handleRegisterClick(drive)}
+                          >
+                            {drive.registered || drivePlacedReq?.status === "APPROVED"
+                              ? "✓ Registered"
+                              : !isEligible
+                              ? "Not Eligible"
+                              : isStudentPlaced
+                              ? drivePlacedReq?.status === "PENDING"
+                                ? "⏳ Approval Pending"
+                                : drivePlacedReq?.status === "REJECTED"
+                                ? "✕ Rejected by Director"
+                                : "Request Approval"
+                              : "Register Now"}
+                          </button>
+                        );
+                      })()}
                     </div>
                   </div>
                 );

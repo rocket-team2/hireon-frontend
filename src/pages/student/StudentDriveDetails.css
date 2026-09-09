@@ -334,6 +334,35 @@
   cursor: not-allowed;
 }
 
+.register-button.registered {
+  background: #059669 !important;
+  color: #ffffff !important;
+  cursor: default !important;
+}
+
+.register-button.pending-approval {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border: 1.5px solid #f59e0b !important;
+  cursor: not-allowed !important;
+}
+
+.register-button.rejected-approval {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 1.5px solid #ef4444 !important;
+  cursor: not-allowed !important;
+}
+
+.register-button.request-approval {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.register-button.request-approval:hover:not(:disabled) {
+  background: #1d4ed8 !important;
+}
+
 /* Loading */
 
 .details-loading {
