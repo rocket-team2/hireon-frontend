@@ -11,14 +11,16 @@ function DirectorHeader({
 }: DirectorHeaderProps) {
   return (
     <header className="director-header">
-      <div className="director-header-title">
-        <h2>{title}</h2>
-        <p>Placement Management System</p>
+      <div className="director-header-brand">
+        <div>
+          <h2>{title}</h2>
+          <p className="portal-subheading">Placement Authority & Management Panel</p>
+        </div>
       </div>
 
       <div className="director-header-user">
         <div className="director-header-avatar">
-          {directorName.charAt(0).toUpperCase()}
+          {directorName ? directorName.charAt(0).toUpperCase() : "D"}
         </div>
 
         <div>

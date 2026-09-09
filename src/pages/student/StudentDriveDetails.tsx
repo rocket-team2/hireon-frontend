@@ -1,955 +1,512 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
 import StudentSidebar from "./components/StudentSidebar";
 import StudentHeader from "./components/StudentHeader";
-
 import {
   getDrive,
   registerForDrive,
   getStudentRegistrations,
   departmentsFromDrive,
   getRequiredSkills,
+  type Drive,
+  type Registration,
+  type RequiredSkill,
+  type Student,
 } from "../../api";
-
-import type {
-  Drive,
-  Registration,
-  RequiredSkill,
-} from "../../api";
-
+import {
+  calculateEligibility,
+  getCompanyLogoUrl,
+  savePlacedApplicationRequest,
+  type EligibilityResult,
+} from "../../utils/eligibility";
 import "./StudentDriveDetails.css";
 
-
 function StudentDriveDetails() {
-
-  // =========================================================
-  // 1. ROUTER
-  // =========================================================
-
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-
-  // =========================================================
-  // 2. STATE
-  // =========================================================
-
   const [drive, setDrive] = useState<Drive | null>(null);
-
-  const [requiredSkills, setRequiredSkills] =
-    useState<RequiredSkill[]>([]);
-
+  const [requiredSkills, setRequiredSkills] = useState<RequiredSkill[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const [registering, setRegistering] =
-    useState(false);
-
-  const [registered, setRegistered] =
-    useState(false);
-
+  const [registering, setRegistering] = useState(false);
+  const [registered, setRegistered] = useState(false);
   const [error, setError] = useState("");
+  const [placedModalOpen, setPlacedModalOpen] = useState(false);
+  const [placedSuccessMsg, setPlacedSuccessMsg] = useState("");
 
-
-  // =========================================================
-  // 3. STUDENT SESSION
-  // =========================================================
-
-  const session = JSON.parse(
-    localStorage.getItem("hireon.session") || "null"
-  );
-
-  const studentId = session?.user?.sId;
-
-  const studentName =
-    session?.user?.name || "Student";
-
-  const department =
-    session?.user?.department || "";
-
-
-  // =========================================================
-  // 4. LOAD DRIVE WHEN PAGE OPENS
-  // =========================================================
+  const session = JSON.parse(localStorage.getItem("hireon.session") || "null");
+  const student = session?.role === "student" ? (session.user as Student) : null;
+  const studentId = student?.sId;
+  const studentName = student?.name || "Student";
+  const department = student?.department || "";
 
   useEffect(() => {
     loadDrive();
   }, [id]);
 
-
-  // =========================================================
-  // 5. LOAD DRIVE DETAILS
-  // =========================================================
-
   const loadDrive = async () => {
-
-    if (!id) {
-      return;
-    }
+    if (!id) return;
 
     try {
-
       setLoading(true);
       setError("");
-
       const driveId = Number(id);
-
-
-      // -------------------------------------------------------
-      // Get drive details
-      // -------------------------------------------------------
-
       const driveData = await getDrive(driveId);
-
       setDrive(driveData);
 
-
-      // -------------------------------------------------------
-      // Get required skills
-      // -------------------------------------------------------
-
       try {
-
-        const skills =
-          await getRequiredSkills(driveId);
-
+        const skills = await getRequiredSkills(driveId);
         setRequiredSkills(skills);
-
-      } catch (error) {
-
-        console.log(
-          "Required skills not available",
-          error
-        );
-
+      } catch (err) {
+        console.log("Required skills not available", err);
       }
-
-
-      // -------------------------------------------------------
-      // Check registration
-      // -------------------------------------------------------
 
       if (studentId) {
-
         try {
-
-          const registrations =
-            await getStudentRegistrations(studentId);
-
-          const alreadyRegistered =
-            registrations.some(
-              (registration: Registration) =>
-                registration.drive?.driveId === driveId
-            );
-
-          setRegistered(alreadyRegistered);
-
-        } catch (error) {
-
-          console.log(
-            "Unable to check registration",
-            error
+          const registrations = await getStudentRegistrations(studentId);
+          const alreadyRegistered = registrations.some(
+            (r: Registration) => r.drive?.driveId === driveId
           );
-
+          setRegistered(alreadyRegistered);
+        } catch (err) {
+          console.log("Unable to check registration", err);
         }
-
       }
-
-    } catch (error) {
-
-      console.error(error);
-
-      setError(
-        "Unable to load placement drive details."
-      );
-
+    } catch (err) {
+      console.error(err);
+      setError("Unable to load placement drive details.");
     } finally {
-
       setLoading(false);
-
     }
   };
 
+  const handleRegisterClick = () => {
+    if (!drive || !student) return;
 
-  // =========================================================
-  // 6. REGISTER FOR DRIVE
-  // =========================================================
-
-  const handleRegister = async () => {
-
-    if (!drive || !studentId) {
-
-      alert(
-        "Student information not found."
-      );
-
+    // Requirement 7: Placed student popup
+    const isPlaced = student.placement_status === "Placed" || Boolean(student.company);
+    if (isPlaced) {
+      setPlacedModalOpen(true);
       return;
     }
 
+    void executeRegister();
+  };
+
+  const executeRegister = async () => {
+    if (!drive || !studentId) return;
 
     try {
-
       setRegistering(true);
-
-
-      await registerForDrive(
-        drive.driveId,
-        studentId
-      );
-
-
+      await registerForDrive(drive.driveId, studentId);
       setRegistered(true);
-
-
-      alert(
-        "Successfully registered for this placement drive!"
-      );
-
-    } catch (error: any) {
-
-      console.error(error);
-
-      alert(
-        error?.message ||
-        "Unable to register for this drive."
-      );
-
+      alert("Successfully registered for this placement drive!");
+    } catch (err: any) {
+      alert(err?.message || "Unable to register for this drive.");
     } finally {
-
       setRegistering(false);
-
     }
   };
 
-
-  // =========================================================
-  // 7. SIDEBAR NAVIGATION
-  // =========================================================
+  const handleConfirmPlacedApplication = () => {
+    if (!drive || !student) return;
+    savePlacedApplicationRequest(drive, student);
+    setPlacedSuccessMsg(`Approval request for ${drive.company?.c_name ?? "Company"} submitted to Director!`);
+    setPlacedModalOpen(false);
+    setTimeout(() => setPlacedSuccessMsg(""), 5000);
+  };
 
   const handleNavigation = (page: string) => {
-
     switch (page) {
-
       case "dashboard":
         navigate("/student-dashboard");
         break;
-
       case "drives":
         navigate("/student/drives");
         break;
-
       case "applications":
         navigate("/student/applications");
         break;
-
       case "shortlisted":
         navigate("/student/shortlisted");
         break;
-
       case "skills":
         navigate("/student/skills");
         break;
-
       case "profile":
         navigate("/student-profile");
         break;
-
       default:
         break;
     }
   };
 
-
-  // =========================================================
-  // 8. LOGOUT
-  // =========================================================
-
   const handleLogout = () => {
-
-    localStorage.removeItem(
-      "hireon.session"
-    );
-
-    localStorage.removeItem(
-      "hireon.role"
-    );
-
-    navigate(
-      "/login-page"
-    );
+    localStorage.removeItem("hireon.session");
+    localStorage.removeItem("hireon.role");
+    navigate("/login-page");
   };
 
-
-  // =========================================================
-  // 9. LOADING PAGE
-  // =========================================================
-
   if (loading) {
-
     return (
-
       <div className="student-dashboard">
-
-        <StudentSidebar
-          activePage="drives"
-          onNavigate={handleNavigation}
-          onLogout={handleLogout}
-        />
-
-
+        <StudentSidebar activePage="drives" onNavigate={handleNavigation} onLogout={handleLogout} />
         <div className="student-dashboard-main">
-
-          <StudentHeader
-            studentName={studentName}
-            department={department}
-          />
-
-
+          <StudentHeader studentName={studentName} department={department} />
           <main className="student-drive-details">
-
-            <div className="details-loading">
-
-              Loading placement drive...
-
-            </div>
-
+            <div className="details-loading">Loading placement drive...</div>
           </main>
-
         </div>
-
       </div>
     );
   }
-
-
-  // =========================================================
-  // 10. ERROR / DRIVE NOT FOUND
-  // =========================================================
 
   if (error || !drive) {
-
     return (
-
       <div className="student-dashboard">
-
-        <StudentSidebar
-          activePage="drives"
-          onNavigate={handleNavigation}
-          onLogout={handleLogout}
-        />
-
-
+        <StudentSidebar activePage="drives" onNavigate={handleNavigation} onLogout={handleLogout} />
         <div className="student-dashboard-main">
-
-          <StudentHeader
-            studentName={studentName}
-            department={department}
-          />
-
-
+          <StudentHeader studentName={studentName} department={department} />
           <main className="student-drive-details">
-
             <div className="details-error">
-
-              <h2>
-                Drive Not Found
-              </h2>
-
-
-              <p>
-                {error ||
-                  "The placement drive could not be found."
-                }
-              </p>
-
-
-              <button
-                onClick={() =>
-                  navigate("/student/drives")
-                }
-              >
-                ← Back to Placement Drives
-              </button>
-
+              <h2>Drive Not Found</h2>
+              <p>{error || "The placement drive could not be found."}</p>
+              <button onClick={() => navigate("/student/drives")}>← Back to Placement Drives</button>
             </div>
-
           </main>
-
         </div>
-
       </div>
     );
   }
 
+  const departments = departmentsFromDrive(drive.allowed_dept);
+  const deadline = new Date(drive.deadline);
+  const isExpired = deadline.getTime() < Date.now();
+  const companyLogoUrl = getCompanyLogoUrl(drive.company?.c_name ?? "", drive.company?.comp_url);
 
-  // =========================================================
-  // 11. DRIVE DATA
-  // =========================================================
-
-  const departments =
-    departmentsFromDrive(
-      drive.allowed_dept
-    );
-
-
-  const deadline =
-    new Date(drive.deadline);
-
-
-  const isExpired =
-    deadline.getTime() < Date.now();
-
-
-  // =========================================================
-  // 12. MAIN UI
-  // =========================================================
+  // Requirement 2 & 3: Eligibility score & reasons calculation
+  const eligResult: EligibilityResult = calculateEligibility(student, drive, requiredSkills);
+  const { score, isEligible, reasons } = eligResult;
+  const isStudentPlaced = student?.placement_status === "Placed" || Boolean(student?.company);
 
   return (
-
     <div className="student-dashboard">
-
-
-      {/* =====================================================
-          SIDEBAR
-      ===================================================== */}
-
-      <StudentSidebar
-        activePage="drives"
-        onNavigate={handleNavigation}
-        onLogout={handleLogout}
-      />
-
-
-      {/* =====================================================
-          MAIN CONTENT
-      ===================================================== */}
+      <StudentSidebar activePage="drives" onNavigate={handleNavigation} onLogout={handleLogout} />
 
       <div className="student-dashboard-main">
-
-
-        {/* Header */}
-
         <StudentHeader
           studentName={studentName}
           department={department}
+          placementStatus={student?.placement_status}
+          companyName={student?.company?.c_name}
         />
 
-
         <main className="student-drive-details">
-
-
-          {/* =================================================
-              BACK BUTTON
-          ================================================= */}
-
-          <button
-            className="details-back-button"
-            onClick={() =>
-              navigate("/student/drives")
-            }
-          >
+          <button className="details-back-button" onClick={() => navigate("/student/drives")}>
             ← Back to Placement Drives
           </button>
 
-
-          {/* =================================================
-              DRIVE HEADER
-          ================================================= */}
-
-          <section className="drive-details-header">
-
-
-            {/* Company + Role */}
-
-            <div className="drive-details-title">
-
-              <div className="company-avatar">
-
-                {drive.company?.c_name
-                  ?.charAt(0)
-                  ?.toUpperCase()
-                }
-
-              </div>
-
-
-              <div>
-
-                <div className="details-small-label">
-                  PLACEMENT DRIVE
-                </div>
-
-
-                <h1>
-                  {drive.company?.c_name}
-                </h1>
-
-
-                <p>
-                  {drive.job_role}
-                </p>
-
-              </div>
-
+          {placedSuccessMsg && (
+            <div className="alert-success-box" role="status" style={{ marginBottom: "1rem" }}>
+              ✓ {placedSuccessMsg}
             </div>
-
-
-            {/* Status */}
-
-            <div
-              className={
-                isExpired
-                  ? "drive-status closed"
-                  : registered
-                  ? "drive-status registered"
-                  : "drive-status active"
-              }
-            >
-
-              {isExpired
-                ? "Closed"
-                : registered
-                ? "Registered"
-                : "Active"
-              }
-
-            </div>
-
-          </section>
-
-
-          {/* =================================================
-              JOB DETAILS
-          ================================================= */}
-
-          <section className="details-card">
-
-            <div className="details-card-heading">
-
-              <div>
-
-                <h2>
-                  Job Details
-                </h2>
-
-
-                <p>
-                  Information about this placement opportunity
-                </p>
-
-              </div>
-
-            </div>
-
-
-            <div className="details-info-grid">
-
-
-              {/* Company */}
-
-              <div className="details-info-item">
-
-                <span>
-                  Company
-                </span>
-
-                <strong>
-                  {drive.company?.c_name}
-                </strong>
-
-              </div>
-
-
-              {/* Job Role */}
-
-              <div className="details-info-item">
-
-                <span>
-                  Job Role
-                </span>
-
-                <strong>
-                  {drive.job_role}
-                </strong>
-
-              </div>
-
-
-              {/* Package */}
-
-              <div className="details-info-item">
-
-                <span>
-                  Package
-                </span>
-
-                <strong>
-                  ₹{drive.ctc_lpa} LPA
-                </strong>
-
-              </div>
-
-
-              {/* Target Batch */}
-
-              <div className="details-info-item">
-
-                <span>
-                  Target Batch
-                </span>
-
-                <strong>
-                  {drive.target_cg_batch}
-                </strong>
-
-              </div>
-
-
-              {/* Arrears */}
-
-              <div className="details-info-item">
-
-                <span>
-                  Maximum Active Arrears
-                </span>
-
-                <strong>
-                  {drive.max_arrear}
-                </strong>
-
-              </div>
-
-
-              {/* Deadline */}
-
-              <div className="details-info-item">
-
-                <span>
-                  Application Deadline
-                </span>
-
-                <strong>
-
-                  {deadline.toLocaleDateString(
-                    "en-IN",
-                    {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    }
-                  )}
-
-                </strong>
-
-              </div>
-
-            </div>
-
-          </section>
-
-
-          {/* =================================================
-              ABOUT OPPORTUNITY
-          ================================================= */}
-
-          <section className="details-card">
-
-            <h2>
-              About the Opportunity
-            </h2>
-
-
-            <p className="details-description">
-
-              {drive.description ||
-                "No description has been provided for this placement opportunity."
-              }
-
-            </p>
-
-          </section>
-
-
-          {/* =================================================
-              ELIGIBILITY
-          ================================================= */}
-
-          <section className="details-card">
-
-            <h2>
-              Eligibility
-            </h2>
-
-
-            <div className="eligibility-grid">
-
-
-              <div className="eligibility-item">
-
-                <span>
-                  Eligible Batch
-                </span>
-
-                <strong>
-                  {drive.target_cg_batch}
-                </strong>
-
-              </div>
-
-
-              <div className="eligibility-item">
-
-                <span>
-                  Maximum Arrears
-                </span>
-
-                <strong>
-                  {drive.max_arrear}
-                </strong>
-
-              </div>
-
-
-              <div className="eligibility-item">
-
-                <span>
-                  Your Department
-                </span>
-
-                <strong>
-                  {department || "Not Available"}
-                </strong>
-
-              </div>
-
-            </div>
-
-
-            {/* Eligible Departments */}
-
-            {departments.length > 0 && (
-
-              <div className="eligible-departments">
-
-                <span>
-                  Eligible Departments
-                </span>
-
-
-                <div className="department-tags">
-
-                  {departments.map(
-                    (dept, index) => (
-
-                      <span
-                        key={index}
-                        className="department-tag"
-                      >
-                        {dept}
-                      </span>
-
-                    )
-                  )}
-
-                </div>
-
-              </div>
-
-            )}
-
-          </section>
-
-
-          {/* =================================================
-              REQUIRED SKILLS
-          ================================================= */}
-
-          {requiredSkills.length > 0 && (
-
-            <section className="details-card">
-
-              <h2>
-                Required Skills
-              </h2>
-
-
-              <p className="section-description">
-
-                Skills expected for this placement opportunity.
-
-              </p>
-
-
-              <div className="required-skills">
-
-                {requiredSkills.map(
-                  (item) => (
-
-                    <div
-                      className="required-skill"
-                      key={item.req_id}
-                    >
-
-                      <div>
-
-                        <strong>
-                          {item.skill?.skillName}
-                        </strong>
-
-                        <span>
-                          Required proficiency
-                        </span>
-
-                      </div>
-
-
-                      <div className="proficiency">
-
-                        {item.reqProficiency}/5
-
-                      </div>
-
-                    </div>
-
-                  )
-                )}
-
-              </div>
-
-            </section>
-
           )}
 
+          {/* Drive Header */}
+          <section className="drive-details-header" style={{ background: "#ffffff", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
+            <div className="drive-details-title" style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+              <img
+                src={companyLogoUrl}
+                alt={drive.company?.c_name}
+                className="company-logo-img"
+                style={{ width: "64px", height: "64px" }}
+                onError={(e) => {
+                  e.currentTarget.src = "https://via.placeholder.com/64?text=CO";
+                }}
+              />
 
-          {/* =================================================
-              COMPANY INFORMATION
-          ================================================= */}
+              <div>
+                <div className="details-small-label" style={{ color: "#64748B", fontSize: "0.75rem", fontWeight: "700", letterSpacing: "0.5px" }}>
+                  CAMPUS PLACEMENT DRIVE
+                </div>
+                <h1 style={{ margin: "2px 0", color: "#042C53", fontSize: "1.75rem", fontWeight: "800" }}>
+                  {drive.company?.c_name}
+                </h1>
+                <p style={{ margin: 0, color: "#64748B", fontSize: "1rem" }}>{drive.job_role}</p>
+              </div>
+            </div>
 
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              {/* Requirement 2: Eligibility Score Badge */}
+              <span
+                className={
+                  isEligible ? (score >= 75 ? "badge-success" : "badge-process") : "badge-danger"
+                }
+                style={{ padding: "8px 14px", fontSize: "0.95rem" }}
+              >
+                {isEligible ? `Eligibility Score: ${score}%` : "Not Eligible"}
+              </span>
+
+              {/* Requirement 10: Hover Button for Director Page */}
+              <div className="hover-popover-trigger">
+                <button
+                  type="button"
+                  className="director-hover-btn"
+                  onClick={() => navigate("/director-dashboard")}
+                  style={{ padding: "8px 14px" }}
+                >
+                  Director Info ℹ️
+                </button>
+                <div className="hover-popover">
+                  <strong>🏢 Placement Director Control</strong>
+                  <p style={{ margin: "4px 0" }}>For authority override, requests, and drive details.</p>
+                  <small style={{ color: "#92C5F8" }}>Click to open Director Portal</small>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Requirement 3: Explicit Not Eligible Reasons Box */}
+          {!isEligible && reasons.length > 0 && (
+            <section className="alert-danger-box" style={{ marginTop: "1rem" }}>
+              <h3 style={{ fontSize: "1.05rem", marginBottom: "6px" }}>❌ Why You Are Not Eligible For This Drive:</h3>
+              <ul>
+                {reasons.map((r, idx) => (
+                  <li key={idx} style={{ marginBottom: "4px" }}>
+                    {r}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* Job Details Card */}
           <section className="details-card">
+            <div className="details-card-heading">
+              <div>
+                <h2>Job & Compensation Details</h2>
+                <p>Role specifications and recruitment metrics</p>
+              </div>
+            </div>
 
-            <h2>
-              Company Information
-            </h2>
-
-
-            <div className="company-information">
-
-
-              <div className="company-information-name">
-
-                <div className="company-avatar small">
-
-                  {drive.company?.c_name
-                    ?.charAt(0)
-                    ?.toUpperCase()
-                  }
-
-                </div>
-
-
-                <div>
-
-                  <strong>
-                    {drive.company?.c_name}
-                  </strong>
-
-                  <span>
-                    Recruiting through HireOn
-                  </span>
-
-                </div>
-
+            <div className="details-info-grid">
+              <div className="details-info-item">
+                <span>Company</span>
+                <strong>{drive.company?.c_name}</strong>
               </div>
 
+              <div className="details-info-item">
+                <span>Job Role</span>
+                <strong>{drive.job_role}</strong>
+              </div>
+
+              <div className="details-info-item">
+                <span>Package (CTC)</span>
+                <strong>₹{drive.ctc_lpa} LPA</strong>
+              </div>
+
+              <div className="details-info-item">
+                <span>Target Batch</span>
+                <strong>{drive.target_cg_batch}</strong>
+              </div>
+
+              <div className="details-info-item">
+                <span>Max Active Arrears</span>
+                <strong>{drive.max_arrear}</strong>
+              </div>
+
+              <div className="details-info-item">
+                <span>Deadline</span>
+                <strong>
+                  {deadline.toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </strong>
+              </div>
+            </div>
+          </section>
+
+          {/* About Opportunity */}
+          <section className="details-card">
+            <h2>About the Opportunity</h2>
+            <p className="details-description">
+              {drive.description || "No description provided for this placement opportunity."}
+            </p>
+          </section>
+
+          {/* Eligibility Specs */}
+          <section className="details-card">
+            <h2>Eligibility & Criteria</h2>
+            <div className="eligibility-grid">
+              <div className="eligibility-item">
+                <span>Eligible Batch</span>
+                <strong>{drive.target_cg_batch}</strong>
+              </div>
+
+              <div className="eligibility-item">
+                <span>Max Allowed Arrears</span>
+                <strong>{drive.max_arrear}</strong>
+              </div>
+
+              <div className="eligibility-item">
+                <span>Your Department</span>
+                <strong>{department || "Not Available"}</strong>
+              </div>
+            </div>
+
+            {departments.length > 0 && (
+              <div className="eligible-departments" style={{ marginTop: "1rem" }}>
+                <span>Allowed Departments</span>
+                <div className="department-tags">
+                  {departments.map((dept, index) => (
+                    <span key={index} className="department-tag" style={{ background: "#E6F1FB", color: "#042C53" }}>
+                      {dept}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Required Skills */}
+          {requiredSkills.length > 0 && (
+            <section className="details-card">
+              <h2>Required Skills & Proficiencies</h2>
+              <div className="required-skills">
+                {requiredSkills.map((item) => (
+                  <div className="required-skill" key={item.req_id}>
+                    <div>
+                      <strong>{item.skill?.skillName}</strong>
+                      <span>Required rating</span>
+                    </div>
+                    <div className="proficiency">{item.reqProficiency}/5</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Company Information */}
+          <section className="details-card">
+            <h2>Company Profile</h2>
+            <div className="company-information">
+              <div className="company-information-name">
+                <img src={companyLogoUrl} alt={drive.company?.c_name} className="company-logo-img" />
+                <div>
+                  <strong>{drive.company?.c_name}</strong>
+                  <span>Recruiting through HireOn Campus Cell</span>
+                </div>
+              </div>
 
               {drive.company?.comp_url && (
-
                 <a
-                  href={drive.company.comp_url}
+                  href={drive.company.comp_url.startsWith("http") ? drive.company.comp_url : `https://${drive.company.comp_url}`}
                   target="_blank"
                   rel="noreferrer"
                   className="company-link"
                 >
-                  Visit Company Website →
+                  Visit Official Website →
                 </a>
-
               )}
-
             </div>
-
           </section>
 
-
-          {/* =================================================
-              REGISTER SECTION
-          ================================================= */}
-
+          {/* Requirement 9: Register Section */}
           <section className="drive-application-card">
-
-
             <div>
-
-              <h2>
-
-                {registered
-                  ? "You are registered"
-                  : "Interested in this opportunity?"
-                }
-
-              </h2>
-
-
+              <h2>{registered ? "✓ Registered for Drive" : "Ready to Apply?"}</h2>
               <p>
-
                 {registered
-
                   ? "You have successfully registered for this placement drive."
-
                   : isExpired
-
                   ? "The registration deadline for this drive has passed."
-
-                  : `Apply before ${deadline.toLocaleDateString(
-                      "en-IN"
-                    )}.`
-                }
-
+                  : `Apply before ${deadline.toLocaleDateString("en-IN")}.`}
               </p>
-
             </div>
-
 
             <button
               className="register-button"
-              disabled={
-                isExpired ||
-                registered ||
-                registering
-              }
-              onClick={handleRegister}
+              disabled={isExpired || registered || registering || !isEligible}
+              onClick={handleRegisterClick}
+              style={{ padding: "12px 24px", fontSize: "1rem" }}
             >
-
               {registering
                 ? "Registering..."
                 : registered
                 ? "✓ Registered"
                 : isExpired
                 ? "Applications Closed"
-                : "Register for Drive"
-              }
-
+                : isStudentPlaced
+                ? "Register (Placed Student)"
+                : "Register for Drive"}
             </button>
-
           </section>
-
-
         </main>
-
       </div>
 
+      {/* Requirement 7: Placed Student Popup Modal */}
+      {placedModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header">
+              <h3 style={{ color: "#993C1D" }}>⚠️ Placed Student Application Confirmation</h3>
+              <button
+                type="button"
+                onClick={() => setPlacedModalOpen(false)}
+                style={{ border: "none", background: "none", cursor: "pointer", fontSize: "1.2rem" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="alert-process-box">
+              <p>
+                You are currently placed at <strong>{student?.company?.c_name ?? "your company"}</strong>.
+              </p>
+              <p style={{ marginTop: "8px" }}>
+                Under institution placement policy, applying for an additional drive (<strong>{drive.company?.c_name} - {drive.job_role}</strong>) requires explicit approval from the Placement Director.
+              </p>
+            </div>
+
+            <p style={{ marginTop: "1rem", fontSize: "0.9rem", color: "#64748B" }}>
+              Would you like to send an official application request to the Placement Director for review?
+            </p>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                onClick={() => setPlacedModalOpen(false)}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid #CBD5E1",
+                  background: "#F1F5F9",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmPlacedApplication}
+                className="badge-success"
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontSize: "0.95rem",
+                }}
+              >
+                Submit Request to Director
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
 
 export default StudentDriveDetails;

@@ -101,19 +101,6 @@ function DirectorShortlists() {
     }
   };
 
-  const handleAddFeedback = async (shortlistId: number) => {
-    const feedbackUrl = feedbackInput[shortlistId];
-    if (!feedbackUrl?.trim()) return;
-
-    try {
-      const updated = await addShortlistFeedback(shortlistId, feedbackUrl.trim());
-      setShortlistedList((prev) => prev.map((s) => (s.shortlistId === shortlistId ? updated : s)));
-      setMessage("Feedback link attached.");
-    } catch {
-      setError("Failed to save feedback link.");
-    }
-  };
-
   const handleDeleteShortlist = async (shortlistId: number) => {
     try {
       await deleteShortlist(shortlistId);
@@ -213,7 +200,6 @@ function DirectorShortlists() {
                   <th>Department</th>
                   <th>Round</th>
                   <th>Status</th>
-                  <th>Feedback URL</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -248,34 +234,6 @@ function DirectorShortlists() {
                           <option value="REJECTED">REJECTED</option>
                           <option value="PENDING">PENDING</option>
                         </select>
-                      </td>
-                      <td>
-                        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                          <input
-                            type="url"
-                            placeholder="Feedback URL"
-                            style={{ padding: "0.3rem", fontSize: "0.8rem", width: "150px" }}
-                            value={feedbackInput[item.shortlistId] ?? item.feedbackUrl ?? ""}
-                            onChange={(e) =>
-                              setFeedbackInput({ ...feedbackInput, [item.shortlistId]: e.target.value })
-                            }
-                          />
-                          <button
-                            type="button"
-                            style={{
-                              padding: "0.3rem 0.5rem",
-                              fontSize: "0.8rem",
-                              background: "#2563eb",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "0.25rem",
-                              cursor: "pointer",
-                            }}
-                            onClick={() => void handleAddFeedback(item.shortlistId)}
-                          >
-                            Save
-                          </button>
-                        </div>
                       </td>
                       <td>
                         <button
