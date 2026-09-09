@@ -8,10 +8,14 @@ import {
   getStudentRegistrations,
   departmentsFromDrive,
   getRequiredSkills,
+  getDriveRounds,
+  getShortlistedByStudent,
   type Drive,
   type Registration,
   type RequiredSkill,
   type Student,
+  type DriveRound,
+  type ShortlistedStudent,
 } from "../../api";
 import {
   calculateEligibility,
@@ -27,6 +31,8 @@ function StudentDriveDetails() {
 
   const [drive, setDrive] = useState<Drive | null>(null);
   const [requiredSkills, setRequiredSkills] = useState<RequiredSkill[]>([]);
+  const [driveRounds, setDriveRounds] = useState<DriveRound[]>([]);
+  const [studentShortlists, setStudentShortlists] = useState<ShortlistedStudent[]>([]);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
   const [registered, setRegistered] = useState(false);
@@ -61,6 +67,13 @@ function StudentDriveDetails() {
         console.log("Required skills not available", err);
       }
 
+      try {
+        const roundsData = await getDriveRounds(driveId);
+        setDriveRounds(roundsData);
+      } catch (err) {
+        console.log("Drive rounds not available", err);
+      }
+
       if (studentId) {
         try {
           const registrations = await getStudentRegistrations(studentId);
@@ -70,6 +83,13 @@ function StudentDriveDetails() {
           setRegistered(alreadyRegistered);
         } catch (err) {
           console.log("Unable to check registration", err);
+        }
+
+        try {
+          const shortlistsData = await getShortlistedByStudent(studentId);
+          setStudentShortlists(shortlistsData);
+        } catch (err) {
+          console.log("Unable to check student shortlists", err);
         }
       }
     } catch (err) {
@@ -188,6 +208,138 @@ function StudentDriveDetails() {
   const eligResult: EligibilityResult = calculateEligibility(student, drive, requiredSkills);
   const { score, isEligible, reasons } = eligResult;
   const isStudentPlaced = student?.placement_status === "Placed" || Boolean(student?.company);
+
+  // Helper to build timeline items for the current drive & student
+  const getTimelineItems = () => {
+    type TimelineItem = {
+      id: string | number;
+      name: string;
+      description?: string;
+      roundLink?: string;
+      startTime?: string;
+      endTime?: string;
+      isFinal?: boolean;
+      status: "SELECTED" | "REJECTED" | "PENDING" | "UPCOMING";
+      statusLabel: string;
+      feedbackUrl?: string;
+    };
+
+    if (driveRounds.length > 0) {
+      let previousRejected = false;
+
+      return driveRounds.map((r, index) => {
+        const shortlistRecord = studentShortlists.find(
+          (s) => s.round?.roundId === r.roundId
+        );
+
+        let status: "SELECTED" | "REJECTED" | "PENDING" | "UPCOMING" = "UPCOMING";
+        let statusLabel = "Upcoming";
+
+        if (shortlistRecord) {
+          const rawStatus = (shortlistRecord.status || "").toUpperCase();
+          if (["SELECTED", "SHORTLISTENED", "PASSED"].includes(rawStatus)) {
+            status = "SELECTED";
+            statusLabel = "Shortlisted / Selected";
+          } else if (["REJECTED", "NOT_SHORTLISTENED"].includes(rawStatus)) {
+            status = "REJECTED";
+            statusLabel = "Not Shortlisted";
+            previousRejected = true;
+          } else if (["PENDING", "WAITLISTED"].includes(rawStatus)) {
+            status = "PENDING";
+            statusLabel = "Pending Review";
+          }
+        } else if (previousRejected) {
+          status = "REJECTED";
+          statusLabel = "Not Shortlisted (Eliminated)";
+        } else if (registered) {
+          if (index === 0) {
+            status = "SELECTED";
+            statusLabel = "Registered (In Progress)";
+          } else {
+            status = "PENDING";
+            statusLabel = "Awaiting Evaluation";
+          }
+        } else {
+          status = "UPCOMING";
+          statusLabel = "Pending Registration";
+        }
+
+        return {
+          id: r.roundId,
+          name: r.roundName || `Round ${index + 1}`,
+          description: r.description,
+          roundLink: r.roundLink,
+          startTime: r.startTime,
+          endTime: r.endTime,
+          isFinal: r.isFinal,
+          status,
+          statusLabel,
+          feedbackUrl: shortlistRecord?.feedbackUrl,
+        } as TimelineItem;
+      });
+    }
+
+    // Default recruitment pipeline fallback when no specific drive rounds exist yet
+    const defaultRounds = [
+      { name: "Aptitude Assessment", desc: "Online aptitude test covering logical reasoning, quantitative aptitude and verbal ability." },
+      { name: "Technical Interview", desc: "Technical discussion covering programming, problem solving and core technical concepts." },
+      { name: "HR & Cultural Fit Interview", desc: "Executive discussion, behavioral assessment, team fit, and compensation overview." },
+    ];
+
+    const driveShortlists = studentShortlists.filter(
+      (s) => s.round?.drive?.driveId === drive?.driveId
+    );
+
+    let previousRejected = false;
+
+    return defaultRounds.map((dr, index) => {
+      const shortlistRecord = driveShortlists[index];
+      let status: "SELECTED" | "REJECTED" | "PENDING" | "UPCOMING" = "UPCOMING";
+      let statusLabel = "Upcoming";
+
+      if (shortlistRecord) {
+        const rawStatus = (shortlistRecord.status || "").toUpperCase();
+        if (["SELECTED", "SHORTLISTENED", "PASSED"].includes(rawStatus)) {
+          status = "SELECTED";
+          statusLabel = "Shortlisted / Selected";
+        } else if (["REJECTED", "NOT_SHORTLISTENED"].includes(rawStatus)) {
+          status = "REJECTED";
+          statusLabel = "Not Shortlisted";
+          previousRejected = true;
+        } else if (["PENDING", "WAITLISTED"].includes(rawStatus)) {
+          status = "PENDING";
+          statusLabel = "Pending Review";
+        }
+      } else if (previousRejected) {
+        status = "REJECTED";
+        statusLabel = "Not Shortlisted";
+      } else if (registered) {
+        if (index === 0) {
+          status = "SELECTED";
+          statusLabel = "Registered & Eligible";
+        } else if (index === 1) {
+          status = "PENDING";
+          statusLabel = "In Review";
+        } else {
+          status = "UPCOMING";
+          statusLabel = "Upcoming";
+        }
+      } else {
+        status = "UPCOMING";
+        statusLabel = "Pending Registration";
+      }
+
+      return {
+        id: `default-${index}`,
+        name: dr.name,
+        description: dr.desc,
+        isFinal: index === defaultRounds.length - 1,
+        status,
+        statusLabel,
+        feedbackUrl: shortlistRecord?.feedbackUrl,
+      } as TimelineItem;
+    });
+  };
 
   return (
     <div className="student-dashboard">
@@ -334,6 +486,145 @@ function StudentDriveDetails() {
             <p className="details-description">
               {drive.description || "No description provided for this placement opportunity."}
             </p>
+          </section>
+
+          {/* Placement Process Timeline */}
+          <section className="details-card placement-process-card">
+            <div className="placement-process-header">
+              <div>
+                <h2>Placement Process</h2>
+                <p className="section-description">
+                  Follow the recruitment rounds and track your selection progress
+                </p>
+              </div>
+              {registered && (
+                <span className="registered-pill">
+                  ✓ Registered for Drive
+                </span>
+              )}
+            </div>
+
+            <div className="process-timeline-container">
+              {getTimelineItems().map((item, idx) => {
+                const isSelected = item.status === "SELECTED";
+                const isRejected = item.status === "REJECTED";
+                const isPending = item.status === "PENDING";
+                const isRight = idx % 2 === 1;
+
+                return (
+                  <div
+                    key={item.id}
+                    className={`process-timeline-row ${isRight ? "align-right" : "align-left"} ${
+                      isSelected ? "status-selected" : isRejected ? "status-rejected" : isPending ? "status-pending" : "status-upcoming"
+                    }`}
+                  >
+                    {/* Left Slot */}
+                    <div className="timeline-slot slot-left">
+                      {!isRight ? (
+                        <div className="timeline-card-box">
+                          <div className="card-top-row">
+                            <span className="round-tag">{`Round ${idx + 1}`}</span>
+                            <span className={`status-tag ${item.status.toLowerCase()}`}>
+                              {isSelected && "✓ "}
+                              {isRejected && "✕ "}
+                              {isPending && "⏳ "}
+                              {item.statusLabel}
+                            </span>
+                          </div>
+
+                          <h3 className="card-title">
+                            {item.name} {item.isFinal ? <span className="final-round-tag">Final</span> : null}
+                          </h3>
+
+                          {item.description && <p className="card-description">{item.description}</p>}
+
+                          {(item.roundLink || item.feedbackUrl || item.startTime) && (
+                            <div className="card-actions-row">
+                              {item.startTime && (
+                                <span className="time-badge">
+                                  📅 {new Date(item.startTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                                </span>
+                              )}
+                              {item.roundLink && (
+                                <a href={item.roundLink} target="_blank" rel="noreferrer" className="action-link-btn">
+                                  🔗 Join Round →
+                                </a>
+                              )}
+                              {item.feedbackUrl && (
+                                <a href={item.feedbackUrl} target="_blank" rel="noreferrer" className="feedback-btn">
+                                  📝 View Notes
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="timeline-meta-label">
+                          <span className="meta-round-title">{`Round ${idx + 1}`}</span>
+                          <span className="meta-round-name">{item.name}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Center Slot (Node & Connecting Track) */}
+                    <div className="timeline-slot slot-center">
+                      <div className="timeline-track-line" />
+                      <div className="timeline-node-circle">
+                        {isSelected ? "✓" : isRejected ? "✕" : idx + 1}
+                      </div>
+                    </div>
+
+                    {/* Right Slot */}
+                    <div className="timeline-slot slot-right">
+                      {isRight ? (
+                        <div className="timeline-card-box">
+                          <div className="card-top-row">
+                            <span className="round-tag">{`Round ${idx + 1}`}</span>
+                            <span className={`status-tag ${item.status.toLowerCase()}`}>
+                              {isSelected && "✓ "}
+                              {isRejected && "✕ "}
+                              {isPending && "⏳ "}
+                              {item.statusLabel}
+                            </span>
+                          </div>
+
+                          <h3 className="card-title">
+                            {item.name} {item.isFinal ? <span className="final-round-tag">Final</span> : null}
+                          </h3>
+
+                          {item.description && <p className="card-description">{item.description}</p>}
+
+                          {(item.roundLink || item.feedbackUrl || item.startTime) && (
+                            <div className="card-actions-row">
+                              {item.startTime && (
+                                <span className="time-badge">
+                                  📅 {new Date(item.startTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                                </span>
+                              )}
+                              {item.roundLink && (
+                                <a href={item.roundLink} target="_blank" rel="noreferrer" className="action-link-btn">
+                                  🔗 Join Round →
+                                </a>
+                              )}
+                              {item.feedbackUrl && (
+                                <a href={item.feedbackUrl} target="_blank" rel="noreferrer" className="feedback-btn">
+                                  📝 View Notes
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="timeline-meta-label">
+                          <span className="meta-round-title">{`Round ${idx + 1}`}</span>
+                          <span className="meta-round-name">{item.name}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </section>
 
           {/* Eligibility Specs */}

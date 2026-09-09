@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  addShortlistFeedback,
   deleteShortlist,
   getAllDrives,
   getDriveRegistrations,
@@ -25,7 +24,6 @@ function DirectorShortlists() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [shortlistedList, setShortlistedList] = useState<ShortlistedStudent[]>([]);
   const [selectedStudentToShortlist, setSelectedStudentToShortlist] = useState<number | null>(null);
-  const [feedbackInput, setFeedbackInput] = useState<{ [id: number]: string }>({});
 
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");

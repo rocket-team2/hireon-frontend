@@ -1,4 +1,6 @@
 .student-drive-details {
+  flex: 1;
+  overflow-y: auto;
   padding: 28px 32px 40px;
   max-width: 1180px;
   margin: 0 auto;
@@ -413,5 +415,319 @@
 
   .register-button {
     width: 100%;
+  }
+}
+
+/* Placement Process Clean 3-Column Grid Timeline */
+
+.placement-process-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 28px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+.placement-process-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.placement-process-header h2 {
+  margin: 0 0 4px !important;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #042c53;
+}
+
+.placement-process-header .section-description {
+  color: #64748b;
+  font-size: 0.88rem;
+  margin: 0 !important;
+}
+
+.process-timeline-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.process-timeline-row {
+  display: grid;
+  grid-template-columns: 1fr 64px 1fr;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.timeline-slot {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.slot-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  height: 100%;
+  min-height: 120px;
+}
+
+.timeline-track-line {
+  position: absolute;
+  top: -32px;
+  bottom: -32px;
+  left: 50%;
+  width: 3px;
+  background: #cbd5e1;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+
+.process-timeline-row:first-child .timeline-track-line {
+  top: 50%;
+}
+
+.process-timeline-row:last-child .timeline-track-line {
+  bottom: 50%;
+}
+
+.timeline-node-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #8b5cf6;
+  color: #7c3aed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  z-index: 3;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+/* Green (Selected) */
+.process-timeline-row.status-selected .timeline-node-circle {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border: 3px solid #bbf7d0;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
+}
+
+.process-timeline-row.status-selected .timeline-card-box {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+/* Red (Rejected) */
+.process-timeline-row.status-rejected .timeline-node-circle {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border: 3px solid #fecaca;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+}
+
+.process-timeline-row.status-rejected .timeline-card-box {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+/* Pending (Evaluation) */
+.process-timeline-row.status-pending .timeline-node-circle {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 3px solid #fef08a;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+}
+
+.process-timeline-row.status-pending .timeline-card-box {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+/* Card Box Styling */
+.timeline-card-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.round-tag {
+  background: #f3e8ff;
+  color: #7e22ce;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.status-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.status-tag.selected {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.status-tag.rejected {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.status-tag.pending {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+
+.status-tag.upcoming {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.card-title {
+  margin: 0 0 6px !important;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-description {
+  margin: 0 0 12px !important;
+  font-size: 0.84rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.card-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.08);
+}
+
+.action-link-btn {
+  color: #2563eb;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.action-link-btn:hover {
+  text-decoration: underline;
+}
+
+.feedback-btn {
+  color: #047857;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-decoration: none;
+  background: #ecfdf5;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #a7f3d0;
+}
+
+.time-badge {
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* Opposite side meta label */
+.timeline-meta-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.slot-left .timeline-meta-label {
+  align-items: flex-end;
+  text-align: right;
+  padding-right: 16px;
+}
+
+.slot-right .timeline-meta-label {
+  align-items: flex-start;
+  text-align: left;
+  padding-left: 16px;
+}
+
+.meta-round-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #8b5cf6;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.meta-round-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .process-timeline-row {
+    grid-template-columns: 44px 1fr;
+  }
+
+  .slot-left.timeline-slot {
+    display: none;
+  }
+
+  .slot-left .timeline-meta-label,
+  .slot-right .timeline-meta-label {
+    display: none;
+  }
+
+  .slot-right {
+    grid-column: 2;
+  }
+
+  .slot-center {
+    grid-column: 1;
+  }
+
+  .timeline-track-line {
+    left: 22px;
   }
 }
