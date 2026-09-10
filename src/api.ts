@@ -248,6 +248,38 @@ export const deleteShortlist = (shortlistId: number) => request<string>(`/shortl
 
 // Required Skills API
 export const getRequiredSkills = (driveId: number) => request<RequiredSkill[]>(`/drives/${driveId}/required-skills`);
+export const getAllRequiredSkills = () => request<RequiredSkill[]>("/drives/all-required-skills");
+
+/**
+ * Fetches required skills for all specified drives into a Map<driveId, RequiredSkill[]>.
+ */
+export async function fetchAllRequiredSkillsMap(drives: Drive[]): Promise<Map<number, RequiredSkill[]>> {
+  const map = new Map<number, RequiredSkill[]>();
+  try {
+    const all = await getAllRequiredSkills();
+    if (Array.isArray(all)) {
+      for (const item of all) {
+        if (item.drive && item.drive.driveId) {
+          const list = map.get(item.drive.driveId) || [];
+          list.push(item);
+          map.set(item.drive.driveId, list);
+        }
+      }
+      return map;
+    }
+  } catch {
+    // Fallback to per-drive requests if bulk endpoint fails
+  }
+
+  const results = await Promise.all(
+    drives.map((d) => getRequiredSkills(d.driveId).catch(() => []))
+  );
+  drives.forEach((d, idx) => {
+    map.set(d.driveId, results[idx]);
+  });
+  return map;
+}
+
 export const addRequiredSkill = (driveId: number, reqData: { skillId: number; reqProficiency: number }) => request<RequiredSkill>(`/drives/${driveId}/required-skills`, {
   method: "POST",
   body: JSON.stringify(reqData),

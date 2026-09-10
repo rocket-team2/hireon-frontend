@@ -4,6 +4,8 @@ import {
   getActiveDrives,
   getSession,
   getStudentRegistrations,
+  getStudentSkills,
+  fetchAllRequiredSkillsMap,
   registerForDrive,
   type Drive as ApiDrive,
   type Student,
@@ -57,14 +59,17 @@ function StudentDrives() {
 
     const loadDrives = async () => {
       try {
-        const [activeDrives, registrations] = await Promise.all([
+        const [activeDrives, registrations, stuSkills] = await Promise.all([
           getActiveDrives(),
           getStudentRegistrations(student.sId),
+          getStudentSkills(student.sId).catch(() => []),
         ]);
+        const reqSkillsMap = await fetchAllRequiredSkillsMap(activeDrives);
         const registeredIds = new Set(registrations.map((r) => r.drive.driveId));
 
         const mapped = activeDrives.map((drive: ApiDrive) => {
-          const eligResult = calculateEligibility(student, drive);
+          const driveReqSkills = reqSkillsMap.get(drive.driveId) || [];
+          const eligResult = calculateEligibility(student, drive, driveReqSkills, stuSkills);
           const logoUrl = getCompanyLogoUrl(drive.company?.c_name ?? "", drive.company?.comp_url);
           const depts = Array.isArray(drive.allowed_dept)
             ? (drive.allowed_dept as string[])
@@ -96,17 +101,17 @@ function StudentDrives() {
           };
         });
 
-        // Requirement: Order on eligibility first, then deadline
+        // Requirement: Order on eligibility first, then score, then deadline
         mapped.sort((a, b) => {
           if (a.eligibilityResult.isEligible !== b.eligibilityResult.isEligible) {
             return a.eligibilityResult.isEligible ? -1 : 1;
           }
+          if (b.eligibilityResult.score !== a.eligibilityResult.score) {
+            return b.eligibilityResult.score - a.eligibilityResult.score;
+          }
           const timeA = new Date(a.apiDrive.deadline).getTime() || 0;
           const timeB = new Date(b.apiDrive.deadline).getTime() || 0;
-          if (timeA !== timeB) {
-            return timeA - timeB;
-          }
-          return b.eligibilityResult.score - a.eligibilityResult.score;
+          return timeA - timeB;
         });
 
         setDrives(mapped);
@@ -289,21 +294,6 @@ function StudentDrives() {
                         View Details
                       </button>
 
-                      {/* Requirement 10: Hover Button for Director Details */}
-                      <div className="hover-popover-trigger">
-                        <button
-                          type="button"
-                          className="director-hover-btn"
-                          onClick={() => navigate("/director-dashboard")}
-                        >
-                          Director Info ℹ️
-                        </button>
-                        <div className="hover-popover">
-                          <strong>🏢 Placement Director Office</strong>
-                          <p style={{ margin: "4px 0" }}>For authority approval & special drive queries.</p>
-                          <small style={{ color: "#92C5F8" }}>Click to open Director Portal</small>
-                        </div>
-                      </div>
 
                       {/* Requirement 9: Register Button */}
                       {(() => {
