@@ -3,9 +3,13 @@ import {
   deleteRegistration,
   getAllDrives,
   getDriveRegistrations,
+  getRequiredSkills,
+  getStudentSkills,
   registerForDrive,
   type Drive,
   type Registration,
+  type RequiredSkill,
+  type StudentSkill,
 } from "../../api";
 import {
   calculateEligibility,
@@ -21,6 +25,8 @@ function DirectorApplications() {
   const [drives, setDrives] = useState<Drive[]>([]);
   const [selectedDriveId, setSelectedDriveId] = useState<number | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [driveSkills, setDriveSkills] = useState<RequiredSkill[]>([]);
+  const [studentSkillsMap, setStudentSkillsMap] = useState<Map<number, StudentSkill[]>>(new Map());
   const [placedRequests, setPlacedRequests] = useState<PlacedApplicationRequest[]>([]);
   const [activeTab, setActiveTab] = useState<"registrations" | "placed_approval">("registrations");
   const [error, setError] = useState("");
@@ -41,20 +47,23 @@ function DirectorApplications() {
   }, []);
 
   useEffect(() => {
-    void getAllDrives()
-      .then((drivesData) => {
+    const loadDrives = async () => {
+      try {
+        const drivesData = await getAllDrives();
         setDrives(drivesData);
         if (drivesData.length > 0) {
           setSelectedDriveId(drivesData[0].driveId);
         }
-      })
-      .catch(() => setError("Unable to load placement drives from database."))
-      .finally(() => setIsLoading(false));
+      } catch {
+        setError("Unable to load placement drives from database.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    // Initial load and sync
+    void loadDrives();
     void refreshPlacedRequests();
 
-    // Listen to real-time events from other tabs and windows
     const handleSyncEvent = () => {
       void refreshPlacedRequests();
     };
@@ -63,7 +72,6 @@ function DirectorApplications() {
     window.addEventListener("placed_apps_synced", handleSyncEvent);
     window.addEventListener("focus", handleSyncEvent);
 
-    // Auto-refresh polling every 3 seconds
     const interval = setInterval(() => {
       void refreshPlacedRequests();
     }, 3000);
@@ -76,7 +84,6 @@ function DirectorApplications() {
     };
   }, [refreshPlacedRequests]);
 
-  // Re-sync whenever tab is switched
   useEffect(() => {
     if (activeTab === "placed_approval") {
       void refreshPlacedRequests();
@@ -86,12 +93,35 @@ function DirectorApplications() {
   useEffect(() => {
     if (!selectedDriveId) {
       setRegistrations([]);
+      setDriveSkills([]);
+      setStudentSkillsMap(new Map());
       return;
     }
 
-    void getDriveRegistrations(selectedDriveId)
-      .then((data) => setRegistrations(data))
-      .catch(() => setError("Unable to load registrations for selected drive."));
+    const loadRegsAndSkills = async () => {
+      try {
+        const [data, reqSkills] = await Promise.all([
+          getDriveRegistrations(selectedDriveId),
+          getRequiredSkills(selectedDriveId).catch(() => []),
+        ]);
+        setRegistrations(data);
+        setDriveSkills(reqSkills);
+
+        const stuSkillPromises = data.map((r) =>
+          r.student?.sId ? getStudentSkills(r.student.sId).catch(() => []) : Promise.resolve([])
+        );
+        const stuSkillsResults = await Promise.all(stuSkillPromises);
+        const sMap = new Map<number, StudentSkill[]>();
+        data.forEach((r, idx) => {
+          if (r.student?.sId) sMap.set(r.student.sId, stuSkillsResults[idx]);
+        });
+        setStudentSkillsMap(sMap);
+      } catch {
+        setError("Unable to load registrations for selected drive.");
+      }
+    };
+
+    void loadRegsAndSkills();
   }, [selectedDriveId]);
 
   const handleDeleteRegistration = async (studentId: number) => {
@@ -235,7 +265,12 @@ function DirectorApplications() {
                     ) : (
                       registrations.map((reg) => {
                         const elig = selectedDrive
-                          ? calculateEligibility(reg.student, selectedDrive)
+                          ? calculateEligibility(
+                              reg.student,
+                              selectedDrive,
+                              driveSkills,
+                              studentSkillsMap.get(reg.student?.sId) || []
+                            )
                           : { score: 85, isEligible: true };
 
                         return (

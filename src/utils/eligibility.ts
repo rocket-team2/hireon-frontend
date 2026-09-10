@@ -2,6 +2,7 @@ import {
   type Student,
   type Drive,
   type RequiredSkill,
+  type StudentSkill,
   getPlacedApplicationsApi,
   savePlacedApplicationApi,
   updatePlacedApplicationStatusApi,
@@ -111,11 +112,13 @@ export function getCompanyLogoUrl(companyName: string, companyUrl?: string): str
 
 /**
  * Calculates Student Eligibility Score (0-100%) and returns detailed ineligible reasons.
+ * Dynamically factors in CGPA, Arrears, Department, Batch, and Required Skill matching against Student Skills.
  */
 export function calculateEligibility(
-  student: Student | null,
+  student: (Student & { skills?: StudentSkill[] }) | null,
   drive: Drive,
-  requiredSkills: RequiredSkill[] = []
+  requiredSkills: RequiredSkill[] = [],
+  studentSkills?: StudentSkill[]
 ): EligibilityResult {
   if (!student) {
     return {
@@ -125,6 +128,7 @@ export function calculateEligibility(
     };
   }
 
+  const effectiveStuSkills: StudentSkill[] = studentSkills || student.skills || [];
   const reasons: string[] = [];
   let score = 0;
 
@@ -133,7 +137,7 @@ export function calculateEligibility(
   const cgpaScore = Math.min(35, Math.round((cgpa / 10.0) * 35));
   score += cgpaScore;
 
-  // 2. Active Arrears Check (Max 25 pts)
+  // 2. Active Arrears Check (Max 20 pts)
   const activeArrears = Number(student.active_arrear) || 0;
   const maxArrearAllowed = Number(drive.max_arrear) ?? 0;
 
@@ -142,10 +146,10 @@ export function calculateEligibility(
       `Active Arrears (${activeArrears}) exceeds maximum allowed for this drive (${maxArrearAllowed}).`
     );
   } else {
-    score += 25;
+    score += 20;
   }
 
-  // 3. Department Check (Max 25 pts)
+  // 3. Department Check (Max 20 pts)
   const allowedDepts = Array.isArray(drive.allowed_dept)
     ? (drive.allowed_dept as string[])
     : drive.allowed_dept && typeof drive.allowed_dept === "object"
@@ -169,7 +173,7 @@ export function calculateEligibility(
       `Department (${student.department || "Unspecified"}) is not in eligible departments list (${allowedDepts.join(", ")}).`
     );
   } else {
-    score += 25;
+    score += 20;
   }
 
   // 4. Batch Match
@@ -179,11 +183,43 @@ export function calculateEligibility(
     );
   }
 
-  // 5. Required Skills Match
-  if (requiredSkills.length > 0) {
-    score += 15;
+  // 5. Dynamic Required Skills Match (Max 25 pts)
+  if (requiredSkills && requiredSkills.length > 0) {
+    let totalSkillRatio = 0;
+    const missingSkills: string[] = [];
+
+    for (const req of requiredSkills) {
+      const reqName = (req.skill?.skillName || "").trim().toLowerCase();
+      const reqId = req.skill?.skillId;
+      const reqProf = Number(req.reqProficiency) || 1;
+
+      const stuSkill = effectiveStuSkills.find((s) => {
+        if (!s.skill) return false;
+        if (reqId && s.skill.skillId === reqId) return true;
+        return (s.skill.skillName || "").trim().toLowerCase() === reqName;
+      });
+
+      if (stuSkill) {
+        const stuProf = Number(stuSkill.proficiency) || 1;
+        const ratio = reqProf > 0 ? Math.min(1.0, stuProf / reqProf) : 1.0;
+        totalSkillRatio += ratio;
+      } else {
+        if (req.skill?.skillName) {
+          missingSkills.push(req.skill.skillName);
+        }
+      }
+    }
+
+    const avgMatchRatio = totalSkillRatio / requiredSkills.length;
+    const skillScore = Math.round(avgMatchRatio * 25);
+    score += skillScore;
+
+    if (missingSkills.length > 0) {
+      reasons.push(`Missing required skill(s): ${missingSkills.join(", ")}.`);
+    }
   } else {
-    score += 15;
+    // If drive has no specified required skills, award full skill score (25 pts)
+    score += 25;
   }
 
   const isEligible = reasons.length === 0;

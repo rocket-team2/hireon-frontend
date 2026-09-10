@@ -4,6 +4,8 @@ import {
   getActiveDrives,
   getSession,
   getStudentRegistrations,
+  getStudentSkills,
+  fetchAllRequiredSkillsMap,
   registerForDrive,
   clearSession,
   type Drive as ApiDrive,
@@ -63,14 +65,17 @@ function StudentDashboard() {
 
     const loadDashboard = async () => {
       try {
-        const [activeDrives, registrations] = await Promise.all([
+        const [activeDrives, registrations, stuSkills] = await Promise.all([
           getActiveDrives(),
           getStudentRegistrations(currentStudent.sId),
+          getStudentSkills(currentStudent.sId).catch(() => []),
         ]);
+        const reqSkillsMap = await fetchAllRequiredSkillsMap(activeDrives);
         const registeredIds = new Set(registrations.map((r) => r.drive.driveId));
 
         const mapped: DashboardDrive[] = activeDrives.map((drive) => {
-          const eligResult = calculateEligibility(currentStudent, drive);
+          const driveReqSkills = reqSkillsMap.get(drive.driveId) || [];
+          const eligResult = calculateEligibility(currentStudent, drive, driveReqSkills, stuSkills);
           const logoUrl = getCompanyLogoUrl(drive.company?.c_name ?? "", drive.company?.comp_url);
           const depts = Array.isArray(drive.allowed_dept)
             ? (drive.allowed_dept as string[])
@@ -97,17 +102,17 @@ function StudentDashboard() {
           };
         });
 
-        // Requirement: Order on eligibility first, then deadline
+        // Requirement: Order on eligibility first, then score, then deadline
         mapped.sort((a, b) => {
           if (a.eligibilityResult.isEligible !== b.eligibilityResult.isEligible) {
             return a.eligibilityResult.isEligible ? -1 : 1;
           }
+          if (b.eligibilityResult.score !== a.eligibilityResult.score) {
+            return b.eligibilityResult.score - a.eligibilityResult.score;
+          }
           const timeA = new Date(a.apiDrive.deadline).getTime() || 0;
           const timeB = new Date(b.apiDrive.deadline).getTime() || 0;
-          if (timeA !== timeB) {
-            return timeA - timeB;
-          }
-          return b.eligibilityResult.score - a.eligibilityResult.score;
+          return timeA - timeB;
         });
 
         setDrives(mapped);

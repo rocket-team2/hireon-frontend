@@ -6,6 +6,7 @@ import {
   getDrive,
   registerForDrive,
   getStudentRegistrations,
+  getStudentSkills,
   departmentsFromDrive,
   getRequiredSkills,
   getDriveRounds,
@@ -13,6 +14,7 @@ import {
   type Drive,
   type Registration,
   type RequiredSkill,
+  type StudentSkill,
   type Student,
   type DriveRound,
   type ShortlistedStudent,
@@ -33,6 +35,7 @@ function StudentDriveDetails() {
 
   const [drive, setDrive] = useState<Drive | null>(null);
   const [requiredSkills, setRequiredSkills] = useState<RequiredSkill[]>([]);
+  const [studentSkills, setStudentSkills] = useState<StudentSkill[]>([]);
   const [driveRounds, setDriveRounds] = useState<DriveRound[]>([]);
   const [studentShortlists, setStudentShortlists] = useState<ShortlistedStudent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +90,15 @@ function StudentDriveDetails() {
         setRequiredSkills(skills);
       } catch (err) {
         console.log("Required skills not available", err);
+      }
+
+      if (studentId) {
+        try {
+          const stSkills = await getStudentSkills(studentId);
+          setStudentSkills(stSkills);
+        } catch (err) {
+          console.log("Student skills not available", err);
+        }
       }
 
       try {
@@ -230,7 +242,7 @@ function StudentDriveDetails() {
   const isExpired = deadline.getTime() < Date.now();
 
   // Requirement 2 & 3: Eligibility score & reasons calculation
-  const eligResult: EligibilityResult = calculateEligibility(student, drive, requiredSkills);
+  const eligResult: EligibilityResult = calculateEligibility(student, drive, requiredSkills, studentSkills);
   const { score, isEligible, reasons } = eligResult;
   const isStudentPlaced = student?.placement_status === "Placed" || Boolean(student?.company);
 
@@ -418,14 +430,6 @@ function StudentDriveDetails() {
 
               {/* Requirement 10: Hover Button for Director Page */}
               <div className="hover-popover-trigger">
-                <button
-                  type="button"
-                  className="director-hover-btn"
-                  onClick={() => navigate("/director-dashboard")}
-                  style={{ padding: "8px 14px" }}
-                >
-                  Director Info ℹ️
-                </button>
                 <div className="hover-popover">
                   <strong>🏢 Placement Director Control</strong>
                   <p style={{ margin: "4px 0" }}>For authority override, requests, and drive details.</p>
