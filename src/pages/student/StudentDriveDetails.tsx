@@ -19,13 +19,12 @@ import {
 } from "../../api";
 import {
   calculateEligibility,
-  getCompanyLogoUrl,
   getPlacedApplications,
   savePlacedApplicationRequest,
-  syncPlacedApplicationsWithServer,
   type EligibilityResult,
   type PlacedApplicationRequest,
 } from "../../utils/eligibility";
+import CompanyLogo from "../../components/CompanyLogo";
 import "./StudentDriveDetails.css";
 
 function StudentDriveDetails() {
@@ -229,7 +228,6 @@ function StudentDriveDetails() {
   const departments = departmentsFromDrive(drive.allowed_dept);
   const deadline = new Date(drive.deadline);
   const isExpired = deadline.getTime() < Date.now();
-  const companyLogoUrl = getCompanyLogoUrl(drive.company?.c_name ?? "", drive.company?.comp_url);
 
   // Requirement 2 & 3: Eligibility score & reasons calculation
   const eligResult: EligibilityResult = calculateEligibility(student, drive, requiredSkills);
@@ -394,15 +392,7 @@ function StudentDriveDetails() {
           {/* Drive Header */}
           <section className="drive-details-header" style={{ background: "#ffffff", borderRadius: "16px", padding: "24px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}>
             <div className="drive-details-title" style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-              <img
-                src={companyLogoUrl}
-                alt={drive.company?.c_name}
-                className="company-logo-img"
-                style={{ width: "64px", height: "64px" }}
-                onError={(e) => {
-                  e.currentTarget.src = "https://via.placeholder.com/64?text=CO";
-                }}
-              />
+              <CompanyLogo companyName={drive.company?.c_name ?? "Company"} companyUrl={drive.company?.comp_url} size={64} />
 
               <div>
                 <div className="details-small-label" style={{ color: "#64748B", fontSize: "0.75rem", fontWeight: "700", letterSpacing: "0.5px" }}>
@@ -711,7 +701,7 @@ function StudentDriveDetails() {
             <h2>Company Profile</h2>
             <div className="company-information">
               <div className="company-information-name">
-                <img src={companyLogoUrl} alt={drive.company?.c_name} className="company-logo-img" />
+                <CompanyLogo companyName={drive.company?.c_name ?? "Company"} companyUrl={drive.company?.comp_url} size={48} />
                 <div>
                   <strong>{drive.company?.c_name}</strong>
                   <span>Recruiting through HireOn Campus Cell</span>

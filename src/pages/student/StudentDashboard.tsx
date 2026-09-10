@@ -18,6 +18,7 @@ import {
   type EligibilityResult,
   type PlacedApplicationRequest,
 } from "../../utils/eligibility";
+import CompanyLogo from "../../components/CompanyLogo";
 import StudentSidebar from "./components/StudentSidebar";
 import StudentHeader from "./components/StudentHeader";
 import "./StudentDashboard.css";
@@ -27,6 +28,7 @@ interface DashboardDrive {
   id: number;
   company: string;
   companyLogoUrl: string;
+  compUrl?: string;
   role: string;
   ctc: number;
   deadline: string;
@@ -81,6 +83,7 @@ function StudentDashboard() {
             id: drive.driveId,
             company: drive.company?.c_name ?? "Company",
             companyLogoUrl: logoUrl,
+            compUrl: drive.company?.comp_url,
             role: drive.job_role,
             ctc: drive.ctc_lpa,
             deadline: new Date(drive.deadline).toLocaleDateString("en-IN", {
@@ -288,14 +291,7 @@ function StudentDashboard() {
                   >
                     <div className="drive-card-top">
                       <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                        <img
-                          src={drive.companyLogoUrl}
-                          alt={drive.company}
-                          className="company-logo-img"
-                          onError={(e) => {
-                            e.currentTarget.src = "https://via.placeholder.com/48?text=CO";
-                          }}
-                        />
+                        <CompanyLogo companyName={drive.company} companyUrl={drive.compUrl} size={48} />
                         <div>
                           <h3>{drive.company}</h3>
                           <p>{drive.role}</p>

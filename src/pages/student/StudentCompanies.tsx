@@ -11,10 +11,10 @@ import {
 } from "../../api";
 import {
   getAllInterviewFeedback,
-  getCompanyLogoUrl,
   saveInterviewFeedback,
   type StudentInterviewFeedback,
 } from "../../utils/eligibility";
+import CompanyLogo from "../../components/CompanyLogo";
 import StudentPageLayout from "./components/StudentPageLayout";
 import "./StudentCompanies.css";
 
@@ -143,8 +143,6 @@ function StudentCompanies() {
               </div>
             ) : (
               companies.map((company) => {
-                const logoUrl = getCompanyLogoUrl(company.c_name, company.comp_url);
-
                 // Find all students placed in this company
                 const placedStudents = students.filter((st) => {
                   if (st.placement_status !== "Placed") return false;
@@ -168,15 +166,7 @@ function StudentCompanies() {
                     {/* Company Header */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", paddingBottom: "16px", borderBottom: "1px solid #E2E8F0" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                        <img
-                          src={logoUrl}
-                          alt={company.c_name}
-                          className="company-logo-img"
-                          style={{ width: "56px", height: "56px" }}
-                          onError={(e) => {
-                            e.currentTarget.src = "https://via.placeholder.com/56?text=CO";
-                          }}
-                        />
+                        <CompanyLogo companyName={company.c_name} companyUrl={company.comp_url} size={56} />
                         <div>
                           <h2 style={{ margin: 0, color: "#0F172A", fontSize: "1.35rem", fontWeight: "800" }}>
                             {company.c_name}

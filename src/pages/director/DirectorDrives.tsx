@@ -6,7 +6,7 @@ import {
   getDriveRegistrations,
   type Drive as ApiDrive,
 } from "../../api";
-import { getCompanyLogoUrl } from "../../utils/eligibility";
+import CompanyLogo from "../../components/CompanyLogo";
 import DirectorPageLayout from "./components/DirectorPageLayout";
 import "./DirectorDrives.css";
 
@@ -73,20 +73,11 @@ function DirectorDrives() {
             ) : (
               drivesWithStats.map(({ drive, registrationsCount }) => {
                 const depts = departmentsFromDrive(drive.allowed_dept);
-                const logoUrl = getCompanyLogoUrl(drive.company?.c_name ?? "", drive.company?.comp_url);
 
                 return (
                   <div key={drive.driveId} className="director-drive-card">
                     <div className="drive-main-info" style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-                      <img
-                        src={logoUrl}
-                        alt={drive.company?.c_name}
-                        className="company-logo-img"
-                        style={{ width: "56px", height: "56px" }}
-                        onError={(e) => {
-                          e.currentTarget.src = "https://via.placeholder.com/56?text=CO";
-                        }}
-                      />
+                      <CompanyLogo companyName={drive.company?.c_name ?? "Company"} companyUrl={drive.company?.comp_url} size={56} />
 
                       <div>
                         <h3>{drive.company?.c_name ?? "Company"}</h3>

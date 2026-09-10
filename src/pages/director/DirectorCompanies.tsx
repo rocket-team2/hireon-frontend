@@ -12,10 +12,10 @@ import {
 } from "../../api";
 import {
   getAllInterviewFeedback,
-  getCompanyLogoUrl,
   saveInterviewFeedback,
   type StudentInterviewFeedback,
 } from "../../utils/eligibility";
+import CompanyLogo from "../../components/CompanyLogo";
 import DirectorPageLayout from "./components/DirectorPageLayout";
 import "./DirectorCompanies.css";
 
@@ -196,8 +196,6 @@ function DirectorCompanies() {
               <p style={{ color: "#6b7280" }}>No companies registered in database.</p>
             ) : (
               companies.map((c) => {
-                const logoUrl = getCompanyLogoUrl(c.c_name, c.comp_url);
-
                 const placedStudents = students.filter((st) => {
                   if (st.placement_status !== "Placed") return false;
                   if (st.company?.comp_id && st.company.comp_id === c.comp_id) return true;
@@ -220,15 +218,7 @@ function DirectorCompanies() {
                     {/* Header */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", paddingBottom: "16px", borderBottom: "1px solid #E2E8F0" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                        <img
-                          src={logoUrl}
-                          alt={c.c_name}
-                          className="company-logo-img"
-                          style={{ width: "52px", height: "52px" }}
-                          onError={(e) => {
-                            e.currentTarget.src = "https://via.placeholder.com/52?text=CO";
-                          }}
-                        />
+                        <CompanyLogo companyName={c.c_name} companyUrl={c.comp_url} size={52} />
                         <div>
                           <h2 style={{ margin: "0 0 4px", color: "#0F172A", fontSize: "1.3rem", fontWeight: "800" }}>{c.c_name}</h2>
                           {c.comp_url ? (
