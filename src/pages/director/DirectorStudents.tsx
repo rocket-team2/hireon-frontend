@@ -7,7 +7,8 @@ import {
   type Company,
   type Student,
 } from "../../api";
-import { generateStudentEmailContent, getCompanyLogoUrl } from "../../utils/eligibility";
+import { generateStudentEmailContent } from "../../utils/eligibility";
+import CompanyLogo from "../../components/CompanyLogo";
 import DirectorPageLayout from "./components/DirectorPageLayout";
 import "./DirectorStudents.css";
 
@@ -150,7 +151,6 @@ function DirectorStudents() {
                 ) : (
                   filteredStudents.map((st) => {
                     const isPlaced = st.placement_status === "Placed" || Boolean(st.company);
-                    const logoUrl = getCompanyLogoUrl(st.company?.c_name ?? "", st.company?.comp_url);
 
                     return (
                       <tr key={st.sId}>
@@ -199,15 +199,7 @@ function DirectorStudents() {
                             </select>
                           ) : isPlaced && st.company?.c_name ? (
                             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                              <img
-                                src={logoUrl}
-                                alt={st.company.c_name}
-                                className="company-logo-img"
-                                style={{ width: "28px", height: "28px" }}
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                }}
-                              />
+                              <CompanyLogo companyName={st.company.c_name} companyUrl={st.company.comp_url} size={28} />
                               <strong style={{ color: "#3B6D11" }}>{st.company.c_name}</strong>
                             </div>
                           ) : (

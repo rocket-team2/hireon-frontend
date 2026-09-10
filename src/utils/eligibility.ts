@@ -38,25 +38,46 @@ export interface StudentInterviewFeedback {
   updatedAt: string;
 }
 
-// Online company logo mapping & automatic search fallback
-const ONLINE_COMPANY_LOGOS: Record<string, string> = {
-  google: "https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg",
-  microsoft: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg",
-  amazon: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg",
-  infosys: "https://upload.wikimedia.org/wikipedia/commons/9/95/Infosys_logo.svg",
-  tcs: "https://upload.wikimedia.org/wikipedia/commons/b/b1/Tata_Consultancy_Services_Logo.svg",
-  wipro: "https://upload.wikimedia.org/wikipedia/commons/a/a0/Wipro_Primary_Logo_Color_RGB.svg",
-  accenture: "https://upload.wikimedia.org/wikipedia/commons/c/cd/Accenture_logo.svg",
-  cognizant: "https://upload.wikimedia.org/wikipedia/commons/2/20/Cognizant_logo.svg",
-  ibm: "https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg",
-  zoho: "https://upload.wikimedia.org/wikipedia/commons/b/b9/Zoho_logo.svg",
-  deloitte: "https://upload.wikimedia.org/wikipedia/commons/5/56/Deloitte.svg",
-  oracle: "https://upload.wikimedia.org/wikipedia/commons/5/50/Oracle_logo.svg",
-  capgemini: "https://upload.wikimedia.org/wikipedia/commons/9/9d/Capgemini_201x_logo.svg",
-  hcl: "https://upload.wikimedia.org/wikipedia/commons/8/87/HCL_Technologies_logo.svg",
-  paypal: "https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg",
-  adobe: "https://upload.wikimedia.org/wikipedia/commons/7/7b/Adobe_Systems_logo_and_wordmark.svg",
-  salesforce: "https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg",
+// Online company logo mapping & automatic domain search
+const COMPANY_DOMAINS: Record<string, string> = {
+  google: "google.com",
+  microsoft: "microsoft.com",
+  amazon: "amazon.com",
+  infosys: "infosys.com",
+  tcs: "tcs.com",
+  "tata consultancy": "tcs.com",
+  wipro: "wipro.com",
+  accenture: "accenture.com",
+  cognizant: "cognizant.com",
+  ibm: "ibm.com",
+  zoho: "zoho.com",
+  deloitte: "deloitte.com",
+  oracle: "oracle.com",
+  capgemini: "capgemini.com",
+  hcl: "hcltech.com",
+  paypal: "paypal.com",
+  adobe: "adobe.com",
+  salesforce: "salesforce.com",
+  atlassian: "atlassian.com",
+  intel: "intel.com",
+  nvidia: "nvidia.com",
+  cisco: "cisco.com",
+  amd: "amd.com",
+  qualcomm: "qualcomm.com",
+  samsung: "samsung.com",
+  apple: "apple.com",
+  meta: "meta.com",
+  facebook: "meta.com",
+  uber: "uber.com",
+  swiggy: "swiggy.com",
+  zomato: "zomato.com",
+  flipkart: "flipkart.com",
+  phonepe: "phonepe.com",
+  paytm: "paytm.com",
+  goldman: "goldmansachs.com",
+  morgan: "morganstanley.com",
+  jpmorgan: "jpmorganchase.com",
+  walmart: "walmart.com",
 };
 
 /**
@@ -66,9 +87,9 @@ export function getCompanyLogoUrl(companyName: string, companyUrl?: string): str
   if (!companyName) return "";
   const nameLower = companyName.trim().toLowerCase();
 
-  for (const [key, logoUrl] of Object.entries(ONLINE_COMPANY_LOGOS)) {
+  for (const [key, domain] of Object.entries(COMPANY_DOMAINS)) {
     if (nameLower.includes(key)) {
-      return logoUrl;
+      return `https://logo.clearbit.com/${domain}`;
     }
   }
 
@@ -77,7 +98,7 @@ export function getCompanyLogoUrl(companyName: string, companyUrl?: string): str
       const cleanUrl = companyUrl.startsWith("http") ? companyUrl : `https://${companyUrl}`;
       const domain = new URL(cleanUrl).hostname.replace(/^www\./, "");
       if (domain) {
-        return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+        return `https://logo.clearbit.com/${domain}`;
       }
     } catch {
       // Fallback
@@ -85,7 +106,7 @@ export function getCompanyLogoUrl(companyName: string, companyUrl?: string): str
   }
 
   const slug = nameLower.replace(/[^a-z0-9]/g, "");
-  return `https://www.google.com/s2/favicons?domain=${slug}.com&sz=128`;
+  return `https://logo.clearbit.com/${slug}.com`;
 }
 
 /**

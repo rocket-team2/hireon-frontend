@@ -227,6 +227,13 @@ export const shortlistStudent = (roundId: number, studentId: number) => request<
   { method: "POST" }
 );
 export const getShortlistedByRound = (roundId: number) => request<ShortlistedStudent[]>(`/rounds/${roundId}/shortlisted`);
+export const processRoundExcel = (roundId: number, regNos: string[]) => request<ShortlistedStudent[]>(
+  `/rounds/${roundId}/process-excel`,
+  {
+    method: "POST",
+    body: JSON.stringify({ regNos }),
+  }
+);
 export const getShortlistedByStudent = (studentId: number) => request<ShortlistedStudent[]>(`/students/${studentId}/shortlisted`);
 export const updateShortlistStatus = (shortlistId: number, status: string) => request<ShortlistedStudent>(
   `/shortlisted/${shortlistId}/status?status=${encodeURIComponent(status)}`,

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getSession, getStudent, getStudentSkills, updateStudent, type Student } from "../../api";
-import { generateStudentEmailContent, getCompanyLogoUrl } from "../../utils/eligibility";
+import { generateStudentEmailContent } from "../../utils/eligibility";
+import CompanyLogo from "../../components/CompanyLogo";
 import StudentPageLayout from "./components/StudentPageLayout";
 import "./StudentProfile.css";
 
@@ -105,7 +106,6 @@ function StudentProfile() {
 
   const isPlaced = student?.placement_status === "Placed" || Boolean(student?.company);
   const companyName = student?.company?.c_name || (isPlaced ? "Campus Recruiting Partner" : "");
-  const companyLogoUrl = getCompanyLogoUrl(companyName, student?.company?.comp_url);
 
   const emailPayload = student
     ? generateStudentEmailContent(
@@ -169,15 +169,7 @@ function StudentProfile() {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                <img
-                  src={companyLogoUrl}
-                  alt={companyName}
-                  className="company-logo-img"
-                  style={{ width: "56px", height: "56px" }}
-                  onError={(e) => {
-                    e.currentTarget.src = "https://via.placeholder.com/56?text=CO";
-                  }}
-                />
+                <CompanyLogo companyName={companyName} companyUrl={student?.company?.comp_url} size={56} />
                 <div>
                   <span style={{ fontSize: "0.8rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                     🎉 CAMPUS PLACEMENT CONFIRMED
