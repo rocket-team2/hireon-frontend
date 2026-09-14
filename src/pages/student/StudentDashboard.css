@@ -29,18 +29,18 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 28px;
-  background: linear-gradient(135deg, #FFFFFF, #E6F1FB);
+  background: #ffffff;
   padding: 24px 28px;
   border-radius: 16px;
-  border: 1px solid #A6CEF7;
-  box-shadow: 0 4px 6px -1px rgba(4, 44, 83, 0.05);
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 4px 12px rgba(23, 37, 84, 0.04);
 }
 
 .student-welcome h1 {
   margin: 0 0 6px;
-  color: #042C53;
+  color: #172554;
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .student-welcome p {
@@ -63,9 +63,9 @@
 
 .section-heading h2 {
   margin: 0 0 4px;
-  color: #042C53;
+  color: #172554;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .section-heading p {
@@ -75,19 +75,22 @@
 }
 
 .view-all-btn {
-  padding: 8px 16px;
-  border: 1px solid #042C53;
-  border-radius: 8px;
-  background: #042C53;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #6366F1, #7C3AED);
   color: #ffffff;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  transition: all 0.25s ease;
 }
 
 .view-all-btn:hover {
-  background: #08437A;
+  background: linear-gradient(135deg, #4F46E5, #6D28D9);
+  box-shadow: 0 8px 18px rgba(99, 102, 241, 0.45);
+  transform: translateY(-1px);
 }
 
 /* Drive cards */
@@ -98,12 +101,12 @@
 }
 
 .drive-card {
-  padding: 22px;
+  padding: 24px;
   border: 1px solid #E2E8F0;
   border-radius: 16px;
   background: #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(23, 37, 84, 0.04);
+  transition: all 0.25s ease;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -111,19 +114,20 @@
 
 .drive-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.08);
+  border-color: #CBD5E1;
+  box-shadow: 0 12px 24px -4px rgba(23, 37, 84, 0.08);
 }
 
 .drive-card.not-eligible {
-  background: #FAECE7;
-  border-color: #F4B9A8;
+  background: #FEE2E2;
+  border-color: #FCA5A5;
 }
 
 .drive-card-top h3 {
   margin: 0 0 4px;
-  color: #042C53;
+  color: #172554;
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .drive-card-top p {
@@ -152,7 +156,7 @@
 }
 
 .drive-info strong {
-  color: #042C53;
+  color: #172554;
   font-size: 15px;
   font-weight: 700;
 }
@@ -175,54 +179,60 @@
 .details-button,
 .director-hover-btn,
 .register-button {
-  padding: 10px 14px;
-  border-radius: 8px;
+  padding: 10px 18px;
+  border-radius: 9999px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
 }
 
 .details-button {
-  border: 1px solid #CBD5E1;
+  border: 1.5px solid #6366F1;
   background: #ffffff;
-  color: #042C53;
+  color: #6366F1;
 }
 
 .details-button:hover {
-  background: #F1F5F9;
+  background: #EEF2FF;
+  border-color: #7C3AED;
+  color: #7C3AED;
 }
 
 .director-hover-btn {
-  border: 1px solid #A6CEF7;
-  background: #E6F1FB;
-  color: #042C53;
+  border: 1.5px solid #EEF2FF;
+  background: #EEF2FF;
+  color: #6366F1;
 }
 
 .director-hover-btn:hover {
-  background: #92C5F8;
+  background: #C7D2FE;
 }
 
 .register-button {
   border: none;
-  background: #042C53;
+  background: linear-gradient(135deg, #6366F1, #7C3AED);
   color: #ffffff;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
   flex: 1;
 }
 
 .register-button.registered {
-  background: #EAF3DE !important;
-  color: #3B6D11 !important;
-  border: 1px solid #C3E2A0 !important;
+  background: #DCFCE7 !important;
+  color: #16A34A !important;
+  border: 1px solid #86EFAC !important;
+  box-shadow: none !important;
 }
 
-.register-button.eligible:hover {
-  background: #08437A;
+.register-button.eligible:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4F46E5, #6D28D9);
+  box-shadow: 0 8px 18px rgba(99, 102, 241, 0.45);
 }
 
 .register-button:disabled {
   background: #E2E8F0;
   color: #94A3B8;
+  box-shadow: none;
   cursor: not-allowed;
 }
 

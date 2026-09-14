@@ -23,14 +23,16 @@ function StudentSidebar({
   return (
     <aside className="student-sidebar">
       <div className="student-sidebar-logo">
-        <img
-          src="/logo.png"
-          alt="HireOn Logo"
-          className="sidebar-logo-img"
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
-        />
+        <div className="sidebar-logo-circle">
+          <img
+            src="/logo.png"
+            alt="HireOn Logo"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        </div>
+        <span className="sidebar-logo-text">HireOn</span>
       </div>
 
       <nav className="student-sidebar-menu">

@@ -2,7 +2,6 @@ import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import {
   addCompany,
-  addShortlistFeedback,
   getCompanies,
   getShortlistedByStudent,
   getStudents,
@@ -10,11 +9,6 @@ import {
   type ShortlistedStudent,
   type Student,
 } from "../../api";
-import {
-  getAllInterviewFeedback,
-  saveInterviewFeedback,
-  type StudentInterviewFeedback,
-} from "../../utils/eligibility";
 import CompanyLogo from "../../components/CompanyLogo";
 import DirectorPageLayout from "./components/DirectorPageLayout";
 import "./DirectorCompanies.css";
@@ -23,21 +17,12 @@ function DirectorCompanies() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [shortlists, setShortlists] = useState<ShortlistedStudent[]>([]);
-  const [feedbacks, setFeedbacks] = useState<StudentInterviewFeedback[]>([]);
   const [cName, setCName] = useState("");
   const [compUrl, setCompUrl] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
-  // Modal state for managing feedback link
-  const [selectedStudentForFeedback, setSelectedStudentForFeedback] = useState<{
-    student: Student;
-    company: Company;
-  } | null>(null);
-  const [feedbackUrlInput, setFeedbackUrlInput] = useState("");
-  const [notesInput, setNotesInput] = useState("");
 
   useEffect(() => {
     void (async () => {
@@ -48,7 +33,6 @@ function DirectorCompanies() {
         ]);
         setCompanies(companiesData);
         setStudents(studentsData);
-        setFeedbacks(getAllInterviewFeedback());
 
         // Fetch shortlisted_student database records for all students
         const shortlistedPromises = studentsData.map((st) =>
@@ -86,67 +70,6 @@ function DirectorCompanies() {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const handleOpenFeedbackModal = (student: Student, company: Company) => {
-    setSelectedStudentForFeedback({ student, company });
-
-    // Check shortlisted_student table feedbackUrl first
-    const studentShortlists = shortlists.filter((sl) => sl.student?.sId === student.sId);
-    const shortlistMatch = studentShortlists.find(
-      (sl) =>
-        sl.feedbackUrl &&
-        (sl.round?.drive?.company?.comp_id === company.comp_id ||
-          sl.round?.drive?.company?.c_name?.toLowerCase() === company.c_name.toLowerCase())
-    );
-
-    const existingLocal = feedbacks.find(
-      (f) => f.studentId === student.sId && f.companyId === company.comp_id
-    );
-
-    setFeedbackUrlInput(shortlistMatch?.feedbackUrl || existingLocal?.feedbackUrl || "");
-    setNotesInput(existingLocal?.notes || "");
-  };
-
-  const handleSaveFeedback = async () => {
-    if (!selectedStudentForFeedback || !feedbackUrlInput.trim()) return;
-
-    const { student, company } = selectedStudentForFeedback;
-    const url = feedbackUrlInput.trim();
-
-    // 1. Local fallback
-    saveInterviewFeedback(
-      student.sId,
-      student.name,
-      company.comp_id,
-      company.c_name,
-      url,
-      notesInput.trim()
-    );
-
-    // 2. Save directly to backend shortlisted_student table if shortlist record exists
-    const studentShortlists = shortlists.filter((sl) => sl.student?.sId === student.sId);
-    const shortlistRec = studentShortlists.find(
-      (sl) =>
-        sl.round?.drive?.company?.comp_id === company.comp_id ||
-        sl.round?.drive?.company?.c_name?.toLowerCase() === company.c_name.toLowerCase()
-    );
-
-    if (shortlistRec) {
-      try {
-        const updated = await addShortlistFeedback(shortlistRec.shortlistId, url);
-        setShortlists((prev) =>
-          prev.map((item) => (item.shortlistId === updated.shortlistId ? updated : item))
-        );
-      } catch {
-        // Fallback saved locally
-      }
-    }
-
-    setFeedbacks(getAllInterviewFeedback());
-    setMessage(`Updated interview feedback link for ${student.name}!`);
-    setSelectedStudentForFeedback(null);
-    setTimeout(() => setMessage(""), 4000);
   };
 
   return (
@@ -244,7 +167,7 @@ function DirectorCompanies() {
                     {/* Placed Students & Feedback Links */}
                     <div>
                       <h4 style={{ color: "#1E293B", fontSize: "0.95rem", marginBottom: "12px", fontWeight: "700" }}>
-                        🎓 Placed Students & Interview Experience Links ({placedStudents.length}):
+                        🎓 Placed Students ({placedStudents.length}):
                       </h4>
 
                       {placedStudents.length === 0 ? (
@@ -254,7 +177,7 @@ function DirectorCompanies() {
                       ) : (
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "12px" }}>
                           {placedStudents.map((st) => {
-                            // 1. Fetch feedback URL directly from shortlisted_student table
+                            // Fetch feedback URL directly from shortlisted_student database records
                             const studentShortlists = shortlists.filter((sl) => sl.student?.sId === st.sId);
                             const shortlistMatch = studentShortlists.find(
                               (sl) =>
@@ -262,15 +185,7 @@ function DirectorCompanies() {
                                 (sl.round?.drive?.company?.comp_id === c.comp_id ||
                                   sl.round?.drive?.company?.c_name?.toLowerCase() === c.c_name.toLowerCase())
                             );
-                            const shortlistFeedbackUrl = shortlistMatch?.feedbackUrl;
-
-                            // 2. Check local feedback storage fallback
-                            const localFb = feedbacks.find(
-                              (f) => f.studentId === st.sId && f.companyId === c.comp_id
-                            );
-
-                            const effectiveFeedbackUrl = shortlistFeedbackUrl || localFb?.feedbackUrl;
-                            const effectiveNotes = localFb?.notes;
+                            const databaseFeedbackUrl = shortlistMatch?.feedbackUrl;
 
                             return (
                               <div
@@ -302,51 +217,20 @@ function DirectorCompanies() {
                                 </div>
 
                                 <div style={{ borderTop: "1px dashed #CBD5E1", paddingTop: "8px", marginTop: "4px" }}>
-                                  {effectiveFeedbackUrl ? (
-                                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                                      <a
-                                        href={effectiveFeedbackUrl.startsWith("http") ? effectiveFeedbackUrl : `https://${effectiveFeedbackUrl}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="badge-process"
-                                        style={{ display: "inline-block", textDecoration: "none", width: "fit-content" }}
-                                      >
-                                        📝 View Interview Feedback →
-                                      </a>
-                                      {effectiveNotes && (
-                                        <p style={{ fontSize: "0.8rem", color: "#1E293B", fontStyle: "italic", margin: "2px 0 0" }}>
-                                          "{effectiveNotes}"
-                                        </p>
-                                      )}
-                                      <button
-                                        type="button"
-                                        style={{
-                                          background: "none",
-                                          border: "none",
-                                          color: "#4F46E5",
-                                          fontSize: "0.78rem",
-                                          textAlign: "left",
-                                          cursor: "pointer",
-                                          padding: 0,
-                                          marginTop: "4px",
-                                        }}
-                                        onClick={() => handleOpenFeedbackModal(st, c)}
-                                      >
-                                        ✏️ Edit Feedback Link
-                                      </button>
-                                    </div>
+                                  {databaseFeedbackUrl ? (
+                                    <a
+                                      href={databaseFeedbackUrl.startsWith("http") ? databaseFeedbackUrl : `https://${databaseFeedbackUrl}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="badge-process"
+                                      style={{ display: "inline-block", textDecoration: "none", width: "fit-content" }}
+                                    >
+                                      📝 View Interview Feedback →
+                                    </a>
                                   ) : (
-                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                      <span style={{ fontSize: "0.8rem", color: "#64748B" }}>No feedback URL added</span>
-                                      <button
-                                        type="button"
-                                        className="badge-process"
-                                        style={{ border: "none", cursor: "pointer", fontSize: "0.78rem" }}
-                                        onClick={() => handleOpenFeedbackModal(st, c)}
-                                      >
-                                        + Add Feedback Link
-                                      </button>
-                                    </div>
+                                    <span style={{ fontSize: "0.82rem", color: "#64748B", fontStyle: "italic" }}>
+                                      No feedback link provided.
+                                    </span>
                                   )}
                                 </div>
                               </div>
@@ -362,88 +246,6 @@ function DirectorCompanies() {
           </div>
         )}
       </div>
-
-      {/* Modal for adding/editing interview feedback */}
-      {selectedStudentForFeedback && (
-        <div className="modal-overlay">
-          <div className="modal-card">
-            <div className="modal-header">
-              <h3>📝 Manage Interview Feedback Link</h3>
-              <button
-                type="button"
-                onClick={() => setSelectedStudentForFeedback(null)}
-                style={{ border: "none", background: "none", cursor: "pointer", fontSize: "1.2rem" }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="alert-process-box">
-              <strong>
-                Candidate: {selectedStudentForFeedback.student.name} ({selectedStudentForFeedback.company.c_name})
-              </strong>
-              <p style={{ margin: "4px 0 0", fontSize: "0.85rem" }}>
-                Save or update interview feedback / experience review link.
-              </p>
-            </div>
-
-            <div style={{ marginTop: "1rem" }}>
-              <label style={{ fontSize: "0.85rem", fontWeight: "700", color: "#0F172A" }}>
-                Feedback / Interview Experience URL *
-              </label>
-              <input
-                type="url"
-                placeholder="https://docs.google.com/forms/... or https://notion.so/..."
-                value={feedbackUrlInput}
-                onChange={(e) => setFeedbackUrlInput(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: "8px",
-                  border: "1px solid #CBD5E1",
-                  margin: "6px 0 14px",
-                }}
-              />
-
-              <label style={{ fontSize: "0.85rem", fontWeight: "700", color: "#0F172A" }}>
-                Interview Round Highlights / Notes (Optional)
-              </label>
-              <textarea
-                rows={3}
-                placeholder="e.g. 3 rounds completed: OA (DSA), Tech Interview (System Design), and HR."
-                value={notesInput}
-                onChange={(e) => setNotesInput(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: "8px",
-                  border: "1px solid #CBD5E1",
-                  marginTop: "6px",
-                  fontFamily: "inherit",
-                }}
-              />
-            </div>
-
-            <div className="modal-actions">
-              <button
-                type="button"
-                onClick={() => setSelectedStudentForFeedback(null)}
-                style={{ padding: "8px 16px", borderRadius: "8px", border: "1px solid #CBD5E1", cursor: "pointer" }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveFeedback}
-                className="badge-success"
-                style={{ padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "0.95rem" }}
-              >
-                Save Feedback Link
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </DirectorPageLayout>
   );
 }

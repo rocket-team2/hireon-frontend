@@ -88,26 +88,29 @@ export function getCompanyLogoUrl(companyName: string, companyUrl?: string): str
   if (!companyName) return "";
   const nameLower = companyName.trim().toLowerCase();
 
-  for (const [key, domain] of Object.entries(COMPANY_DOMAINS)) {
+  let domain = "";
+  for (const [key, dom] of Object.entries(COMPANY_DOMAINS)) {
     if (nameLower.includes(key)) {
-      return `https://logo.clearbit.com/${domain}`;
+      domain = dom;
+      break;
     }
   }
 
-  if (companyUrl) {
+  if (!domain && companyUrl) {
     try {
       const cleanUrl = companyUrl.startsWith("http") ? companyUrl : `https://${companyUrl}`;
-      const domain = new URL(cleanUrl).hostname.replace(/^www\./, "");
-      if (domain) {
-        return `https://logo.clearbit.com/${domain}`;
-      }
+      domain = new URL(cleanUrl).hostname.replace(/^www\./, "");
     } catch {
       // Fallback
     }
   }
 
-  const slug = nameLower.replace(/[^a-z0-9]/g, "");
-  return `https://logo.clearbit.com/${slug}.com`;
+  if (!domain) {
+    const slug = nameLower.replace(/[^a-z0-9]/g, "");
+    domain = `${slug}.com`;
+  }
+
+  return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 }
 
 /**

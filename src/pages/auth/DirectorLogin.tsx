@@ -67,56 +67,62 @@ function DirectorLogin() {
 
   return (
     <div className="director-login-page">
+      {/* LEFT BRAND PANEL */}
       <div className="director-brand">
         <div className="director-brand-content">
-          <img
-            src="/logo.png"
-            alt="HireOn Portal"
-            style={{ maxHeight: "64px", marginBottom: "20px", objectFit: "contain" }}
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
-          />
-          <h2>
-            Empowering Campus Recruitment & Placement Management.
-          </h2>
+          <div className="brand-logo-circle">
+            <img
+              src="/logo.png"
+              alt="HireOn Logo"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          </div>
 
-          <p>
-            Manage drive approvals, track student eligibility metrics, review placed student requests,
-            and streamline campus recruitment.
+          <h1 className="brand-title">HireOn</h1>
+
+          <p className="brand-subtitle">
+            To stay connected with us please login with your personal info
           </p>
 
-          <div className="director-features">
-            <div>
-              <span>✓</span>
-              <p>Authority controls for placed student requests</p>
-            </div>
-            <div>
-              <span>✓</span>
-              <p>Eligibility score analytics & applicant directory</p>
-            </div>
-            <div>
-              <span>✓</span>
-              <p>Recruiting company portfolio & drive creation</p>
-            </div>
+          <button
+            type="button"
+            className="brand-signin-btn"
+            onClick={() => {
+              const emailInput = document.getElementById("director-email");
+              emailInput?.focus();
+            }}
+          >
+            SIGN IN
+          </button>
+
+          <div className="brand-tabs">
+            <span className="brand-tab" onClick={() => navigate("/login-page")}>
+              STUDENT HERE
+            </span>
+            <span className="tab-divider">|</span>
+            <span className="brand-tab active" onClick={() => navigate("/director-login-page")}>
+              DIRECTOR HERE
+            </span>
           </div>
         </div>
       </div>
 
+      {/* RIGHT FORM PANEL */}
       <div className="director-login-section">
         <div className="director-login-card">
           <div className="director-login-header">
-            <h2>Director Sign In</h2>
-            <p>Access your Placement Authority portal</p>
+            <h2>Welcome</h2>
+            <p>Login in to your account to continue</p>
           </div>
 
           <form onSubmit={handleSubmit}>
             <div className="director-form-group">
-              <label htmlFor="director-email">Email Address</label>
               <input
                 id="director-email"
                 type="email"
-                placeholder="director@college.edu"
+                placeholder="Email..........."
                 required
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
@@ -124,48 +130,52 @@ function DirectorLogin() {
             </div>
 
             <div className="director-form-group">
-              <label htmlFor="director-password">Password</label>
               <input
                 id="director-password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder="Password..........."
                 required
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
             </div>
 
-            {/* Remember Me Checkbox */}
-            <div className="director-login-options" style={{ margin: "14px 0 6px" }}>
-              <label className="director-remember-me" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "#475569", fontSize: "0.9rem" }}>
+            <div className="director-login-options">
+              <label className="director-remember-me">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                 />
-                <span>Remember Me</span>
+                <span>Remember me</span>
               </label>
+
+              <button
+                type="button"
+                className="director-forgot-password"
+                onClick={() => setError("Please contact your IT administrator for Director credentials.")}
+              >
+                Forgot your password?
+              </button>
             </div>
 
-            {error && <div className="alert-danger-box" role="alert">{error}</div>}
-            {success && <div className="alert-success-box" role="status">{success}</div>}
+            {error && <div className="alert-danger-box" role="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
+            {success && <div className="alert-success-box" role="status" style={{ marginBottom: "1rem" }}>{success}</div>}
 
-            <button type="submit" className="director-login-button" disabled={isLoading} style={{ marginTop: "1rem" }}>
-              {isLoading ? "Signing In..." : "Sign In to Director Portal"}
-            </button>
+            <div className="login-btn-container">
+              <button type="submit" className="director-login-button" disabled={isLoading}>
+                {isLoading ? "LOGGING IN..." : "LOG IN"}
+              </button>
+            </div>
           </form>
 
           <div className="director-login-footer">
-            <div className="student-login">
-              <span>Are you a student?</span>
-              <button
-                type="button"
-                onClick={() => navigate("/login-page")}
-                style={{ color: "#4F46E5", fontWeight: "700" }}
-              >
-                Student Portal →
-              </button>
-            </div>
+            <p>
+              Don't have an account?{" "}
+              <span className="signup-link" onClick={() => setError("Please contact institution administration for Director portal access.")}>
+                sign up
+              </span>
+            </p>
           </div>
         </div>
       </div>

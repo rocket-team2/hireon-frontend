@@ -7,7 +7,7 @@
   flex-shrink: 0;
   background: #ffffff;
   border-bottom: 1px solid #E2E8F0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 6px rgba(23, 37, 84, 0.04);
 }
 
 .student-header-brand {
@@ -18,9 +18,9 @@
 
 .student-header h2 {
   margin: 0;
-  color: #042C53;
+  color: #172554;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .portal-subheading {
@@ -47,11 +47,11 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: linear-gradient(135deg, #042C53, #08437A);
+  background: linear-gradient(135deg, #6366F1, #7C3AED);
   color: #ffffff;
   font-size: 15px;
   font-weight: 700;
-  box-shadow: 0 2px 4px rgba(4, 44, 83, 0.2);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
 }
 
 .student-header-user strong,
@@ -60,9 +60,9 @@
 }
 
 .student-header-user strong {
-  color: #1E293B;
+  color: #172554;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .student-header-user span {
