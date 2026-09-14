@@ -10,41 +10,53 @@
 
 .student-companies-header h1 {
   font-size: 1.75rem;
-  font-weight: 700;
-  color: #111827;
+  font-weight: 800;
+  color: #172554;
   margin-bottom: 0.25rem;
 }
 
 .student-companies-header p {
-  color: #6b7280;
+  color: #64748B;
   font-size: 0.95rem;
 }
 
 .companies-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 1.5rem;
 }
 
 .company-card {
   background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.75rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(23, 37, 84, 0.04);
+  transition: all 0.25s ease;
+}
+
+.company-card:hover {
+  transform: translateY(-2px);
+  border-color: #CBD5E1;
+  box-shadow: 0 10px 20px -3px rgba(23, 37, 84, 0.08);
 }
 
 .company-card h3 {
   font-size: 1.2rem;
-  font-weight: 600;
-  color: #111827;
+  font-weight: 800;
+  color: #172554;
   margin-bottom: 0.5rem;
 }
 
 .company-card a {
-  color: #2563eb;
+  color: #6366F1;
   font-size: 0.9rem;
+  font-weight: 700;
   text-decoration: underline;
+}
+
+.company-card a:hover {
+  color: #7C3AED;
 }
 
 .empty-companies {
@@ -52,7 +64,7 @@
   text-align: center;
   padding: 3rem;
   background: white;
-  border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
-  color: #6b7280;
+  border-radius: 16px;
+  border: 1px solid #E2E8F0;
+  color: #64748B;
 }

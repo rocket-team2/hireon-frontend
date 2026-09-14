@@ -533,15 +533,15 @@
   height: 44px;
   border-radius: 50%;
   background: #ffffff;
-  border: 3px solid #8b5cf6;
-  color: #7c3aed;
+  border: 3px solid #6366F1;
+  color: #7C3AED;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
   font-size: 1.1rem;
   z-index: 3;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(23, 37, 84, 0.08);
   transition: all 0.2s ease;
   flex-shrink: 0;
 }
@@ -591,7 +591,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 14px;
   padding: 18px 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 4px 12px rgba(23, 37, 84, 0.04);
   transition: all 0.2s ease;
 }
 
@@ -604,8 +604,8 @@
 }
 
 .round-tag {
-  background: #f3e8ff;
-  color: #7e22ce;
+  background: #EEF2FF;
+  color: #6366F1;
   font-size: 0.72rem;
   font-weight: 700;
   padding: 3px 10px;

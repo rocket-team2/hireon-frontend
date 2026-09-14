@@ -25,14 +25,16 @@ function DirectorSidebar({
   return (
     <aside className="director-sidebar">
       <div className="director-sidebar-logo">
-        <img
-          src="/logo.png"
-          alt="HireOn Logo"
-          className="sidebar-logo-img"
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
-        />
+        <div className="sidebar-logo-circle">
+          <img
+            src="/logo.png"
+            alt="HireOn Logo"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        </div>
+        <span className="sidebar-logo-text">HireOn</span>
       </div>
 
       <nav className="director-sidebar-menu">

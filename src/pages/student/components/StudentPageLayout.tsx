@@ -59,7 +59,13 @@ function StudentPageLayout({ activePage, title, children }: StudentPageLayoutPro
         onLogout={handleLogout}
       />
       <div className="student-page-main">
-        <StudentHeader studentName={student?.name ?? "Student"} department={student?.department ?? ""} title={title} />
+        <StudentHeader
+          studentName={student?.name ?? "Student"}
+          department={student?.department ?? ""}
+          title={title}
+          placementStatus={student?.placement_status}
+          companyName={student?.company?.c_name}
+        />
         <div className="student-page-content">{children}</div>
       </div>
     </div>

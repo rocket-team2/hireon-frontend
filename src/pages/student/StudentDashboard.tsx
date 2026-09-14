@@ -46,6 +46,7 @@ function StudentDashboard() {
     return session?.role === "student" ? (session.user as Student) : null;
   });
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const [placedPopupDrive, setPlacedPopupDrive] = useState<DashboardDrive | null>(null);
   const [placedSuccessMsg, setPlacedSuccessMsg] = useState("");
   const [placedRequests, setPlacedRequests] = useState<PlacedApplicationRequest[]>([]);
@@ -124,6 +125,8 @@ function StudentDashboard() {
         }
       } catch {
         setError("Unable to load drives. Please refresh the page.");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -285,8 +288,15 @@ function StudentDashboard() {
               </button>
             </div>
 
-            <div className="drive-grid">
-              {(showAllDrives ? drives : drives.slice(0, 6)).map((drive) => {
+            {isLoading ? (
+              <p>Loading placement drives from database...</p>
+            ) : drives.length === 0 ? (
+              <div className="empty-drives">
+                <p>No active placement drives available.</p>
+              </div>
+            ) : (
+              <div className="drive-grid">
+                {(showAllDrives ? drives : drives.slice(0, 6)).map((drive) => {
                 const { score, isEligible, reasons } = drive.eligibilityResult;
 
                 return (
@@ -405,6 +415,7 @@ function StudentDashboard() {
                 );
               })}
             </div>
+            )}
 
             {drives.length > 6 && (
               <div style={{ textAlign: "center", marginTop: "24px" }}>

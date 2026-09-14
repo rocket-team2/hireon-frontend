@@ -10,13 +10,13 @@
 
 .rounds-header h1 {
   font-size: 1.75rem;
-  font-weight: 700;
-  color: #111827;
+  font-weight: 800;
+  color: #172554;
   margin-bottom: 0.25rem;
 }
 
 .rounds-header p {
-  color: #6b7280;
+  color: #64748B;
   font-size: 0.95rem;
 }
 
@@ -29,27 +29,29 @@
 
 .drive-picker select {
   padding: 0.6rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
   font-size: 0.95rem;
   background: white;
   min-width: 280px;
+  color: #172554;
+  font-weight: 600;
 }
 
 .add-round-card {
   background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.75rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
   padding: 1.5rem;
   margin-bottom: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(23, 37, 84, 0.04);
 }
 
 .add-round-card h2 {
   font-size: 1.2rem;
-  font-weight: 600;
+  font-weight: 800;
   margin-bottom: 1rem;
-  color: #111827;
+  color: #172554;
 }
 
 .round-form-grid {
@@ -68,15 +70,26 @@
 .round-form-field label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #374151;
+  color: #172554;
 }
 
 .round-form-field input,
 .round-form-field textarea {
-  padding: 0.6rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid #E2E8F0;
+  background-color: #F8FAFC;
+  border-radius: 10px;
   font-size: 0.9rem;
+  color: #172554;
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.round-form-field input:focus,
+.round-form-field textarea:focus {
+  border-color: #6366F1;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 .rounds-list {
@@ -87,38 +100,47 @@
 
 .round-item-card {
   background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.75rem;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
   padding: 1.25rem 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(23, 37, 84, 0.04);
+  transition: all 0.25s ease;
 
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+.round-item-card:hover {
+  transform: translateY(-1px);
+  border-color: #CBD5E1;
+  box-shadow: 0 8px 18px rgba(23, 37, 84, 0.06);
+}
+
 .round-item-info h3 {
   font-size: 1.15rem;
-  font-weight: 600;
-  color: #111827;
+  font-weight: 800;
+  color: #172554;
   margin-bottom: 0.25rem;
 }
 
 .round-item-info p {
-  color: #4b5563;
+  color: #64748B;
   font-size: 0.9rem;
 }
 
 .delete-round-btn {
   background: transparent;
-  border: 1px solid #ef4444;
-  color: #ef4444;
-  padding: 0.35rem 0.75rem;
-  border-radius: 0.375rem;
+  border: 1.5px solid #DC2626;
+  color: #DC2626;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
   font-size: 0.85rem;
+  font-weight: 700;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .delete-round-btn:hover {
-  background: #fef2f2;
+  background: #FEE2E2;
 }

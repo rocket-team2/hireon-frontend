@@ -3,6 +3,7 @@ import {
   deleteRegistration,
   getSession,
   getStudentRegistrations,
+  getStudentId,
   type Registration,
   type Student,
 } from "../../api";
@@ -25,28 +26,32 @@ function StudentApplications() {
   });
 
   useEffect(() => {
-    if (!student) return;
+    const sId = getStudentId(student);
+    if (!sId) {
+      setIsLoading(false);
+      return;
+    }
 
     const loadReqs = async () => {
       try {
         const synced = await syncPlacedApplicationsWithServer();
-        setPlacedRequests(synced.filter((r) => r.studentId === student.sId));
+        setPlacedRequests(synced.filter((r) => r.studentId === sId));
       } catch {
         const all = getPlacedApplications();
-        setPlacedRequests(all.filter((r) => r.studentId === student.sId));
+        setPlacedRequests(all.filter((r) => r.studentId === sId));
       }
     };
 
     void loadReqs();
 
-    void getStudentRegistrations(student.sId)
+    void getStudentRegistrations(sId)
       .then((data) => setRegistrations(data))
       .catch(() => setError("Unable to load your registered drives from database."))
       .finally(() => setIsLoading(false));
 
     const handleSync = () => {
       const all = getPlacedApplications();
-      setPlacedRequests(all.filter((r) => r.studentId === student.sId));
+      setPlacedRequests(all.filter((r) => r.studentId === sId));
     };
 
     window.addEventListener("storage", handleSync);

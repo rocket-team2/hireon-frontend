@@ -19,6 +19,12 @@ export interface Student {
   company?: Company | null;
 }
 
+export function getStudentId(student: Student | null | undefined): number {
+  if (!student) return 0;
+  const s = student as unknown as { sId?: number; sid?: number; s_id?: number };
+  return Number(s.sId ?? s.sid ?? s.s_id ?? 0);
+}
+
 export interface Director {
   director_id: number;
   name: string;

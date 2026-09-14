@@ -65,59 +65,62 @@ function StudentLogin() {
 
   return (
     <div className="login-page">
+      {/* LEFT BRAND PANEL */}
       <div className="login-brand">
         <div className="brand-content">
-          <img
-            src="/logo.png"
-            alt="HireOn Portal"
-            style={{ maxHeight: "64px", marginBottom: "20px", objectFit: "contain" }}
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
-          />
+          <div className="brand-logo-circle">
+            <img
+              src="/logo.png"
+              alt="HireOn Logo"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          </div>
 
-          <h2>
-            Connect. Analyze. Achieve.
-            <br />
-            Your Career Portal.
-          </h2>
+          <h1 className="brand-title">HireOn</h1>
 
-          <p>
-            Connect with top companies, discover recruitment drives, track eligibility metrics,
-            and achieve your dream placement.
+          <p className="brand-subtitle">
+            To stay connected with us please login with your personal info
           </p>
 
-          <div className="brand-features">
-            <div>
-              <span>✓</span>
-              <p>Dynamic eligibility scoring</p>
-            </div>
-            <div>
-              <span>✓</span>
-              <p>Instant application tracking & email reports</p>
-            </div>
-            <div>
-              <span>✓</span>
-              <p>Top recruiting partner companies</p>
-            </div>
+          <button
+            type="button"
+            className="brand-signin-btn"
+            onClick={() => {
+              const emailInput = document.getElementById("email");
+              emailInput?.focus();
+            }}
+          >
+            SIGN IN
+          </button>
+
+          <div className="brand-tabs">
+            <span className="brand-tab active" onClick={() => navigate("/login-page")}>
+              STUDENT HERE
+            </span>
+            <span className="tab-divider">|</span>
+            <span className="brand-tab" onClick={() => navigate("/director-login-page")}>
+              DIRECTOR HERE
+            </span>
           </div>
         </div>
       </div>
 
+      {/* RIGHT FORM PANEL */}
       <div className="login-section">
         <div className="login-card">
           <div className="login-header">
-            <h2>Student Sign In</h2>
-            <p>Access your student placement dashboard</p>
+            <h2>Welcome</h2>
+            <p>Login in to your account to continue</p>
           </div>
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="email">Email Address</label>
               <input
                 id="email"
                 type="email"
-                placeholder="student@college.edu"
+                placeholder="Email..........."
                 required
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
@@ -125,48 +128,52 @@ function StudentLogin() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="password">Password</label>
               <input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder="Password..........."
                 required
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
             </div>
 
-            {/* Remember Me Checkbox (No Forgot Password) */}
-            <div className="login-options" style={{ margin: "14px 0 6px" }}>
-              <label className="remember-me" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "#475569", fontSize: "0.9rem" }}>
+            <div className="login-options">
+              <label className="remember-me">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                 />
-                <span>Remember Me</span>
+                <span>Remember me</span>
               </label>
+
+              <button
+                type="button"
+                className="forgot-password"
+                onClick={() => setError("Please contact your placement cell administrator to reset your password.")}
+              >
+                Forgot your password?
+              </button>
             </div>
 
-            {error && <div className="alert-danger-box" role="alert">{error}</div>}
-            {success && <div className="alert-success-box" role="status">{success}</div>}
+            {error && <div className="alert-danger-box" role="alert" style={{ marginBottom: "1rem" }}>{error}</div>}
+            {success && <div className="alert-success-box" role="status" style={{ marginBottom: "1rem" }}>{success}</div>}
 
-            <button type="submit" className="login-button" disabled={isLoading} style={{ marginTop: "1rem" }}>
-              {isLoading ? "Signing In..." : "Sign In to Dashboard"}
-            </button>
+            <div className="login-btn-container">
+              <button type="submit" className="login-button" disabled={isLoading}>
+                {isLoading ? "LOGGING IN..." : "LOG IN"}
+              </button>
+            </div>
           </form>
 
           <div className="login-footer">
-            <div className="director-login">
-              <span>Are you a placement director?</span>
-              <button
-                type="button"
-                onClick={() => navigate("/director-login-page")}
-                style={{ color: "#4F46E5", fontWeight: "700" }}
-              >
-                Director Portal →
-              </button>
-            </div>
+            <p>
+              Don't have an account?{" "}
+              <span className="signup-link" onClick={() => setError("Please register through your college placement coordinator.")}>
+                sign up
+              </span>
+            </p>
           </div>
         </div>
       </div>
